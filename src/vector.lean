@@ -1,4 +1,4 @@
-import data.vector .list .logic .dot_prod
+import data.vector .list 
 
 variables {α : Type} {k m n : nat}
 
@@ -100,44 +100,5 @@ def dot_prod_zero [ring α] (v : vector α k) : v ⬝ 0 = 0 := sorry
 def sum [has_zero α] [has_add α] : ∀ {k}, vector α k → α 
 | 0     _ := 0
 | (k+1) v := v.head + @sum k v.tail
-
-#exit
-
-def sub [has_neg α] [has_sub α] (v w : vector α k) : vector α k :=
-⟨ list.sub v.val w.val, 
-  calc list.length (list.sub (v.val) (w.val)) 
-      = max (list.length (v.val)) (list.length (w.val)) : list.length_sub
-  ... = v.val.length : 
-        begin
-          apply max_eq_left (le_of_eq _),
-          apply eq.trans w.property v.property.symm
-        end
-  ... = k : v.property ⟩ 
-
-instance has_sub [has_neg α] [has_sub α] : has_sub (vector α m) := ⟨sub⟩ 
-
-lemma sub_self [add_group α] (v : vector α m) : v - v = 0 := 
-begin
-  apply subtype.eq, simp only 
-  [has_zero.zero, has_sub.sub, sub, zero, repeat],
-  rw list.sub_self, apply fun_mono_2 rfl v.property
-end
-
-def nonneg [has_le α] [has_zero α] (v : vector α m) : Prop := 
-∀ a ∈ v, (0 : α) ≤ a
-
-def pos [has_lt α] [has_zero α] (v : vector α m) : Prop := 
-∀ a ∈ v, (0 : α) < a
-
-def comp_le [has_le α] : ∀ {k}, vector α k → vector α k → Prop
-| 0     x y := true 
-| (k+1) x y :=
-  (x.head ≤ y.head) ∧ (comp_le x.tail y.tail)
-
-def mem : ∀ {m}, α → vector α m → Prop 
-| 0     _ _ := false
-| (m+1) a v := a = v.head ∨ mem a v.tail 
-
-instance has_mem : has_mem α (vector α m) := ⟨mem⟩ 
 
 end vector

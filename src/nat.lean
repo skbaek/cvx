@@ -1,4 +1,4 @@
-import data.nat.basic tactic.find
+import data.nat.basic 
 
 namespace nat
 

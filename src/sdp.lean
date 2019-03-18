@@ -52,7 +52,7 @@ let ⟨b,A,C⟩ := D in
 (vector.map₂ const_mul y A).sum ≺ C
 
 /- Lemma 2.15 -/
-lemma no_duality_cap (C : S n) (A : vector (S n) m) (b : vector real m) :
+lemma no_duality_gap (C : S n) (A : vector (S n) m) (b : vector real m) :
   (∃ X : S n, primal.strictly_feasible ⟨C,A,b⟩ X) → 
   (∃ y : vector real m, dual.strictly_feasible ⟨b,A,C⟩ y) → 
   (∃ X : S n, ∃ y : vector real m, 

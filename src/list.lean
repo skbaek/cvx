@@ -1,5 +1,4 @@
-import data.list.basic
-.nat .logic
+import data.list.basic .nat 
 
 variables {α : Type} {k m n : nat} 
   {as bs cs : list α}
@@ -71,9 +70,11 @@ lemma eq_of_equiv [has_zero α] :
 | [] (_::_) h1 h2 := by cases h1
 | (a1::as1) (a2::as2) h1 h2 := 
   begin
-    apply fun_mono_2 (h2 0) (eq_of_equiv _ _),
-    simp only [add_left_inj, add_comm, length] at h1,
-    exact h1, intro m, apply h2 (m+1) 
+    congr,
+    { apply h2 0 },
+    { apply eq_of_equiv, 
+      simp only [add_left_inj, add_comm, length] at h1,
+      exact h1, intro m, apply h2 (m+1) }
   end
 
 @[simp] def neg [has_neg α] : list α → list α 
@@ -155,7 +156,7 @@ lemma add_equiv_add [add_monoid α] {a b c d : list α} :
   a ≃ b → c ≃ d → (add a c) ≃ (add b d) := 
 begin
   intros h1 h2 m, simp only [get_add],
-  apply fun_mono_2 (h1 m) (h2 m)
+  rw [h1 m, h2 m],
 end
 
 lemma add_left_neg [add_group α]: add (neg as) as ≃ [] :=
