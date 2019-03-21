@@ -2,7 +2,10 @@
 import algebra.module
 import analysis.normed_space.basic
 import data.real.basic
+import linear_algebra.basic
 
+local attribute [instance] classical.prop_decidable
+noncomputable theory
 
 -- TODO: move
 lemma le_of_sqr_le_sqr {a : ℝ} {b : ℝ} (ha : 0 ≤ a) (hb : 0 ≤ b) (hab : a ^ 2 ≤ b ^ 2) : a ≤ b := 
@@ -18,7 +21,7 @@ end
 
 -- TODO: Why do I need to extend add_comm_group
 
-class real_inner_product_space (V : Type*) extends add_comm_group V, vector_space ℝ V :=
+class real_inner_product_space (V : Type*) [add_comm_group V] extends vector_space ℝ V :=
 (inner : V → V → ℝ)
 (inner_add_left : ∀ u v w, inner (u + v) w = inner u w + inner v w)
 (inner_smul_left : ∀ r v w, inner (r • v) w = r * inner v w)
@@ -28,7 +31,7 @@ class real_inner_product_space (V : Type*) extends add_comm_group V, vector_spac
 
 namespace real_inner_product_space
 
-variables {V : Type*} [real_inner_product_space V] {W : Type*} [real_inner_product_space W]
+variables {V : Type*} [add_comm_group V] [real_inner_product_space V] {W : Type*} [add_comm_group W] [real_inner_product_space W]
 
 open real_inner_product_space
 
@@ -70,7 +73,7 @@ section
 
 /- first, we define norm internally, to show that an inner product space is a normed space -/
 
-private noncomputable def ip_norm (v : V):= real.sqrt ⟪v, v⟫
+private def ip_norm (v : V):= real.sqrt ⟪v, v⟫
 
 private lemma ip_norm_zero : ip_norm (0 : V) = 0 :=
 by rw [ip_norm, inner_zero_left, real.sqrt_zero]
@@ -107,7 +110,7 @@ begin
   rw [inner_comm v u, ortho, zero_add, add_zero, ip_norm, real.sqr_sqrt (inner_self_nonneg _)]
 end
 
-private noncomputable def ip_proj_on (u : V) {v : V} (H : v ≠ 0) : V :=
+private def ip_proj_on (u : V) {v : V} (H : v ≠ 0) : V :=
 (⟪u, v⟫ / (ip_norm v)^2) • v
 
 private lemma ip_proj_on_orthogonal (u : V) {v : V} (H : v ≠ 0) :
@@ -144,7 +147,7 @@ have (ip_norm u)^2 ≥ (ip_norm (ip_proj_on u H))^2,
   end,
 le_of_sqr_le_sqr (ip_norm_nonneg _) (ip_norm_nonneg _) this
 
-private lemma ip_cauchy_schwartz [decidable_eq V] (u v : V) : abs ⟪u, v⟫ ≤ ip_norm u * ip_norm v :=
+private lemma ip_cauchy_schwartz (u v : V) : abs ⟪u, v⟫ ≤ ip_norm u * ip_norm v :=
 begin
   by_cases h_cases : v = (0 : V),
   { rw [h_cases, inner_zero_right, abs_zero, ip_norm_zero, mul_zero] },
@@ -156,12 +159,10 @@ begin
  }
 end
 
--- TODO: can we avoid decidable_eq?
-
-private lemma ip_cauchy_schwartz' [decidable_eq V] (u v : V) : ⟪u, v⟫ ≤ ip_norm u * ip_norm v :=
+private lemma ip_cauchy_schwartz' (u v : V) : ⟪u, v⟫ ≤ ip_norm u * ip_norm v :=
 le_trans (le_abs_self _) (ip_cauchy_schwartz _ _)
 
-private lemma ip_norm_triangle [decidable_eq V] (u v : V) : ip_norm (u + v) ≤ ip_norm u + ip_norm v :=
+private lemma ip_norm_triangle (u v : V) : ip_norm (u + v) ≤ ip_norm u + ip_norm v :=
 have H : ⟪u, v⟫ ≤ ip_norm u * ip_norm v, from ip_cauchy_schwartz' u v,
 have (ip_norm (u + v))^2 ≤ (ip_norm u + ip_norm v)^2, from
   calc
@@ -181,10 +182,10 @@ have (ip_norm (u + v))^2 ≤ (ip_norm u + ip_norm v)^2, from
                          mul_comm (ip_norm v) (ip_norm u)],
 le_of_sqr_le_sqr (ip_norm_nonneg _) (add_nonneg (ip_norm_nonneg _) (ip_norm_nonneg _)) this
 
-noncomputable instance has_norm [real_inner_product_space V] :
+instance has_norm [real_inner_product_space V] :
 has_norm V := { norm := ip_norm }.
 
-noncomputable lemma normed_space_core [decidable_eq V]: normed_space.core ℝ V := 
+lemma normed_space_core : normed_space.core ℝ V := 
 {
   norm_eq_zero_iff := ip_norm_eq_zero_iff,
   triangle := ip_norm_triangle,
@@ -193,7 +194,7 @@ noncomputable lemma normed_space_core [decidable_eq V]: normed_space.core ℝ V 
 
 -- TODO: Should we have a similar setup like "normed_space_core" for inner_product_space?
 
-noncomputable instance is_normed_space [decidable_eq V] [real_inner_product_space V] :
+instance is_normed_space [real_inner_product_space V] :
   normed_space ℝ V := 
 normed_space.of_core _ _ normed_space_core
 
@@ -207,7 +208,7 @@ lemma norm_squared (v : V) : ∥ v ∥^2 = ⟪v, v⟫ := ip_norm_squared v
 lemma norm_pythagorean {u v : V} (ortho : u ⊥ v) : ∥ u + v ∥^2 = ∥ u ∥^2 + ∥ v ∥^2 :=
 ip_norm_pythagorean ortho
 
-noncomputable def proj_on (u : V) {v : V} (H : v ≠ 0) : V := (⟪u, v⟫ / ∥ v ∥^2) • v
+def proj_on (u : V) {v : V} (H : v ≠ 0) : V := (⟪u, v⟫ / ∥ v ∥^2) • v
 
 lemma proj_on_orthogonal (u : V) {v : V} (H : v ≠ 0) :
   proj_on u H ⊥ (u - proj_on u H) :=
@@ -224,11 +225,11 @@ ip_norm_squared_pythagorean u H
 lemma norm_proj_on_le (u : V) {v : V} (H : v ≠ 0) :
   ∥ proj_on u H ∥ ≤ ∥ u ∥ := ip_norm_proj_on_le u H
 
-theorem cauchy_schwartz [decidable_eq V] (u v : V) : abs ⟪u, v⟫ ≤ ∥ u ∥ * ∥ v ∥ := ip_cauchy_schwartz u v
+theorem cauchy_schwartz (u v : V) : abs ⟪u, v⟫ ≤ ∥ u ∥ * ∥ v ∥ := ip_cauchy_schwartz u v
 
-theorem cauchy_schwartz' [decidable_eq V] (u v : V) : ⟪u, v⟫ ≤ ∥ u ∥ * ∥ v ∥ := ip_cauchy_schwartz' u v
+theorem cauchy_schwartz' (u v : V) : ⟪u, v⟫ ≤ ∥ u ∥ * ∥ v ∥ := ip_cauchy_schwartz' u v
 
-theorem eq_proj_on_cauchy_schwartz [decidable_eq V]  {u v : V} (H : v ≠ 0) (H₁ : abs ⟪u, v⟫ = ∥ u ∥ * ∥ v ∥) :
+theorem eq_proj_on_cauchy_schwartz {u v : V} (H : v ≠ 0) (H₁ : abs ⟪u, v⟫ = ∥ u ∥ * ∥ v ∥) :
   u = proj_on u H :=
 have ∥ v ∥ ≠ 0, from assume H', H ((normed_space_core.norm_eq_zero_iff _).1 H'),
 have ∥ u ∥ = ∥ proj_on u H ∥, by rw [norm_proj_on_eq, H₁, mul_div_cancel _ this],
@@ -244,37 +245,43 @@ begin
   exact eq_of_sub_eq_zero ((normed_space_core.norm_eq_zero_iff _).1 ((or_self _).1 (mul_eq_zero.1 this)))
 end
 
--- instances
+/- Instances of real_inner_product_space -/
 
-noncomputable instance product [decidable_eq V] [decidable_eq W] :
-  real_inner_product_space (V × W) := 
+instance foo :
+  @real_inner_product_space ℝ (ring.to_add_comm_group ℝ) :=
+{ real_inner_product_space .
+  inner := (*),
+  inner_add_left := add_mul,
+  inner_smul_left := mul_assoc,
+  inner_comm := mul_comm,
+  inner_self_nonneg := mul_self_nonneg,
+  eq_zero_of_inner_self_eq_zero := by apply eq_zero_of_mul_self_eq_zero,
+}
+
+-- TODO: move
+@[simp] lemma real.ring_add (x y : ℝ) : ring.add x y = x + y := rfl
+@[simp] lemma real.no_zero_divisors_mul (x y : ℝ) : no_zero_divisors.mul x y = x * y := rfl
+
+-- set_option pp.implicit true
+instance product {V : Type*} [add_comm_group V] [real_inner_product_space V] {W : Type*} [add_comm_group W] [real_inner_product_space W]:
+  @real_inner_product_space (V × W) prod.add_comm_group:= 
 {
   inner := λ x y, ⟪x.1,y.1⟫ + ⟪x.2,y.2⟫,
-  inner_add_left := by simp [inner_add_left],
-  inner_smul_left := by simp [inner_smul_left, mul_add],
+  inner_add_left := begin simp [inner_add_left] end,
+  inner_smul_left := begin simp [inner_smul_left, mul_add], end,
   inner_comm := by simp [inner_comm],
-  inner_self_nonneg := by simp [add_nonneg (inner_self_nonneg _) (inner_self_nonneg _)],
+  inner_self_nonneg := by intros; exact add_nonneg (inner_self_nonneg _) (inner_self_nonneg _),
   eq_zero_of_inner_self_eq_zero := 
     begin 
       intros x hx, 
       apply prod.eq_iff_fst_eq_snd_eq.2, 
+      dsimp at hx,
       rw add_eq_zero_iff_eq_zero_and_eq_zero_of_nonneg_of_nonneg 
           (inner_self_nonneg _) (inner_self_nonneg _) at hx,
       apply and.intro,
       { apply eq_zero_of_inner_self_eq_zero hx.1 },
       { apply eq_zero_of_inner_self_eq_zero hx.2 }
     end
-}
-
-noncomputable instance real :
-  real_inner_product_space ℝ :=
-{
-  inner := (*),
-  inner_add_left := add_mul,
-  inner_smul_left := mul_assoc,
-  inner_comm := mul_comm,
-  inner_self_nonneg := mul_self_nonneg,
-  eq_zero_of_inner_self_eq_zero := by apply eq_zero_of_mul_self_eq_zero
 }
 
 end real_inner_product_space

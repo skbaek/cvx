@@ -5,7 +5,10 @@ import data.set.basic
 import tactic.interactive
 import .inner_product_space
 
-section
+noncomputable theory
+local attribute [instance] classical.prop_decidable
+
+section basic
 
 variables {α : Type*} {β : Type*} {ι : Sort _} 
   [add_comm_group α] [vector_space ℝ α] [add_comm_group β] [vector_space ℝ β] 
@@ -84,31 +87,13 @@ begin
   exact eq_of_mem_singleton hx
 end
 
-end
+end basic
 
-
-def norm_cone (α : Type*) [normed_space ℝ α] : set (α × ℝ) :=
-{ x : α × ℝ | ∥ x.1 ∥ ≤ x.2 }
-
--- TODO: better seperate space & norm?
-
-lemma cone_norm_cone (α : Type*) [normed_space ℝ α] : cone (norm_cone α) :=
-begin
-  intros x ha c hc,
-  unfold norm_cone at *,
-  simp [norm_smul c x.fst, real.norm_eq_abs, abs_of_nonneg hc],
-  apply mul_le_mul (le_refl _),
-  { simp at ha, assumption },
-  { simp [abs_nonneg _] },
-  { exact hc }
-end
-
-
--- Dual cone
-
-section
+section dual_cone
 
 variables {α : Type*} {β : Type*}
+  [add_comm_group α] 
+  [add_comm_group β] 
   [real_inner_product_space α] 
   [real_inner_product_space β] 
   (A : set α) (B : set α)
@@ -125,10 +110,5 @@ begin
   exact ha _ hz
 end
 
---TODO: dual norm
+end dual_cone
 
-lemma inner_product_cone (α : Type*) [decidable_eq α] [real_inner_product_space α] : 
-  dual_cone (norm_cone α) = norm_cone α := sorry
-
-
-end

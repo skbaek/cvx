@@ -11,8 +11,10 @@ import linear_algebra.basic
 import ring_theory.algebra
 
 
+open set
+
 --TODO: move
-lemma image_neg_Iio (r : ℝ) : image (λz, -z) {z : ℝ | z < r} = {z : ℝ | -r < z} :=
+lemma image_neg_Iio (r : ℝ) : image (λz, -z) (Iio r) = Ioi (-r) :=
 begin
   apply set.ext,
   intros z,
@@ -31,7 +33,7 @@ begin
 end
 
 --TODO: move
-lemma image_neg_Iic (r : ℝ) : image (λz, -z) {z : ℝ | z ≤ r} = {z : ℝ | -r ≤ z} :=
+lemma image_neg_Iic (r : ℝ) : image (λz, -z) (Iic r) = Ici (-r) :=
 begin
   apply set.ext,
   intros z,
@@ -86,13 +88,34 @@ begin
   ac_refl
 end
 
-section
+-- TODO: move
+instance algebra_complex : algebra ℝ ℂ :=
+algebra.of_ring_hom coe $ by constructor; intros; simp [complex.one_re]
+
+-- TODO: move
+instance : has_scalar ℝ ℂ := { smul := λ r c, ↑r * c}
+
+--TODO: move
+lemma smul_re: ∀ (c : ℝ) (x : ℂ), (c • x).re = c • x.re := 
+begin 
+  unfold has_scalar.smul, 
+  assume _ _,
+  rw [complex.mul_re,complex.of_real_im],
+  simp
+end
+
+--TODO: move
+lemma smul_im: ∀ (c : ℝ) (x : ℂ), (c • x).im = c • x.im := 
+begin 
+  unfold has_scalar.smul, 
+  assume _ _,
+  rw [complex.mul_im,complex.of_real_re],
+  simp
+end
 
 variables {α : Type*} {β : Type*} {ι : Sort _} 
   [add_comm_group α] [vector_space ℝ α] [add_comm_group β] [vector_space ℝ β] 
   (A : set α) (B : set α) (x : α)  
-
-open set
 
 /-- Convexity of sets -/
 def convex (A : set α) := 
@@ -296,28 +319,6 @@ lemma convex_linear_preimage' (A : set β) (f : α →ₗ[ℝ] β) (hA : convex 
   convex (preimage f A) :=
 convex_linear_preimage A f.to_fun (linear_map.is_linear f) hA
 
-lemma convex_Iio (r : ℝ) : convex {z : ℝ | z < r} :=
-begin 
-  intros x y a b hx hy ha hb hab,
-  wlog h : x ≤ y using [x y a b, y x b a],
-  exact le_total _ _,
-  calc 
-    a * x + b * y ≤ a * y + b * y : add_le_add_right (mul_le_mul_of_nonneg_left h ha) _
-    ...           = y             : by rw [←add_mul a b y, hab, one_mul]
-    ... < r                       : hy
-end 
-
-lemma convex_Iic (r : ℝ) : convex {z : ℝ | z ≤ r} :=
-begin 
-  intros x y a b hx hy ha hb hab,
-  wlog h : x ≤ y using [x y a b, y x b a],
-  exact le_total _ _,
-  calc 
-    a * x + b * y ≤ a * y + b * y : add_le_add_right (mul_le_mul_of_nonneg_left h ha) _
-    ...           = y             : by rw [←add_mul a b y, hab, one_mul]
-    ... ≤ r                       : hy
-end 
-
 lemma convex_neg : convex A → convex ((λ z, -z) '' A) := 
 convex_linear_image _ _ is_linear_map_neg
 
@@ -370,7 +371,29 @@ begin
   end
 end
 
-lemma convex_Ioi (r : ℝ) : convex {z : ℝ | r < z} :=
+lemma convex_Iio (r : ℝ) : convex (Iio r) :=
+begin 
+  intros x y a b hx hy ha hb hab,
+  wlog h : x ≤ y using [x y a b, y x b a],
+  exact le_total _ _,
+  calc 
+    a * x + b * y ≤ a * y + b * y : add_le_add_right (mul_le_mul_of_nonneg_left h ha) _
+    ...           = y             : by rw [←add_mul a b y, hab, one_mul]
+    ... < r                       : hy
+end 
+
+lemma convex_Iic (r : ℝ) : convex (Iic r) :=
+begin 
+  intros x y a b hx hy ha hb hab,
+  wlog h : x ≤ y using [x y a b, y x b a],
+  exact le_total _ _,
+  calc 
+    a * x + b * y ≤ a * y + b * y : add_le_add_right (mul_le_mul_of_nonneg_left h ha) _
+    ...           = y             : by rw [←add_mul a b y, hab, one_mul]
+    ... ≤ r                       : hy
+end 
+
+lemma convex_Ioi (r : ℝ) : convex (Ioi r) :=
 begin
   rw [← neg_neg r],
   rw (image_neg_Iio (-r)).symm,
@@ -379,7 +402,7 @@ begin
   exact convex_linear_image _ _ is_linear_map_neg (convex_Iio (-r)) _ _ _ _ hx hy ha hb hab
 end
 
-lemma convex_Ici (r : ℝ) : convex {z : ℝ | r ≤ z} :=
+lemma convex_Ici (r : ℝ) : convex (Ici r) :=
 begin
   rw [← neg_neg r],
   rw (image_neg_Iic (-r)).symm,
@@ -395,12 +418,18 @@ begin
  apply convex_Iio,
 end
 
--- TODO: more variants
 lemma convex_Ico (r : ℝ) (s : ℝ) : convex (Ico r s) := 
 begin
  apply convex_inter,
  apply convex_Ici,
  apply convex_Iio,
+end
+
+lemma convex_Ioc (r : ℝ) (s : ℝ) : convex (Ioc r s) := 
+begin
+ apply convex_inter,
+ apply convex_Ioi,
+ apply convex_Iic,
 end
 
 lemma convex_Icc (r : ℝ) (s : ℝ) : convex (Icc r s) := 
@@ -410,15 +439,6 @@ begin
  apply convex_Iic,
 end
 
---lemma convex_halfspace_lt (f : α →ₗ[ℝ] ℝ) (r : ℝ) : 
---  convex {w | f w < r} :=
---begin
---  assume x y a b hx hy ha hb hab,
---  simp,
---  apply convex_Iio _ hx hy ha hb hab
---end
-
--- TODO: more variants > <= >=, or even in Ioo, Icc etc
 lemma convex_halfspace_lt (f : α → ℝ) (h : is_linear_map ℝ f) (r : ℝ) : 
   convex {w | f w < r} :=
 begin
@@ -426,6 +446,33 @@ begin
   simp,
   rw [is_linear_map.add ℝ f,  is_linear_map.smul f a,  is_linear_map.smul f b],
   apply convex_Iio _ _ _ _ _ hx hy ha hb hab
+end
+
+lemma convex_halfspace_le (f : α → ℝ) (h : is_linear_map ℝ f) (r : ℝ) : 
+  convex {w | f w ≤ r} :=
+begin
+  assume x y a b hx hy ha hb hab,
+  simp,
+  rw [is_linear_map.add ℝ f,  is_linear_map.smul f a,  is_linear_map.smul f b],
+  apply convex_Iic _ _ _ _ _ hx hy ha hb hab
+end
+
+lemma convex_halfspace_gt (f : α → ℝ) (h : is_linear_map ℝ f) (r : ℝ) : 
+  convex {w | r < f w} :=
+begin
+  assume x y a b hx hy ha hb hab,
+  simp,
+  rw [is_linear_map.add ℝ f,  is_linear_map.smul f a,  is_linear_map.smul f b],
+  apply convex_Ioi _ _ _ _ _ hx hy ha hb hab
+end
+
+lemma convex_halfspace_ge (f : α → ℝ) (h : is_linear_map ℝ f) (r : ℝ) : 
+  convex {w | r ≤ f w} :=
+begin
+  assume x y a b hx hy ha hb hab,
+  simp,
+  rw [is_linear_map.add ℝ f,  is_linear_map.smul f a,  is_linear_map.smul f b],
+  apply convex_Ici _ _ _ _ _ hx hy ha hb hab
 end
 
 lemma convex_halfplane (f : α → ℝ) (h : is_linear_map ℝ f) (r : ℝ) : 
@@ -437,26 +484,29 @@ begin
   rw [hx, hy, (add_smul a b r).symm, hab, one_smul]
 end
 
--- TODO: move
-instance algebra_complex : algebra ℝ ℂ :=
-algebra.of_ring_hom coe $ by constructor; intros; simp [complex.one_re]
-
--- TODO: move
-instance : has_scalar ℝ ℂ := { smul := λ r c, ↑r * c}
-
---TODO: move
-lemma smul_re: ∀ (c : ℝ) (x : ℂ), (c • x).re = c • x.re := 
-begin 
-  unfold has_scalar.smul, 
-  assume _ _,
-  rw [complex.mul_re,complex.of_real_im],
-  simp
-end
-  
--- TODO: 
--- TODO: more variants: <=, >=, >, im
 lemma convex_halfspace_re_lt (r : ℝ): convex {c : ℂ | c.re < r} :=
 by apply convex_halfspace_lt _ (is_linear_map.mk complex.add_re smul_re)
+
+lemma convex_halfspace_re_le (r : ℝ): convex {c : ℂ | c.re ≤ r} :=
+by apply convex_halfspace_le _ (is_linear_map.mk complex.add_re smul_re)
+
+lemma convex_halfspace_re_gt (r : ℝ): convex {c : ℂ | r < c.re } :=
+by apply convex_halfspace_gt _ (is_linear_map.mk complex.add_re smul_re)
+
+lemma convex_halfspace_re_lge (r : ℝ): convex {c : ℂ | r ≤ c.re} :=
+by apply convex_halfspace_ge _ (is_linear_map.mk complex.add_re smul_re)
+
+lemma convex_halfspace_im_lt (r : ℝ): convex {c : ℂ | c.im < r} :=
+by apply convex_halfspace_lt _ (is_linear_map.mk complex.add_im smul_im)
+
+lemma convex_halfspace_im_le (r : ℝ): convex {c : ℂ | c.im ≤ r} :=
+by apply convex_halfspace_le _ (is_linear_map.mk complex.add_im smul_im)
+
+lemma convex_halfspace_im_gt (r : ℝ): convex {c : ℂ | r < c.im } :=
+by apply convex_halfspace_gt _ (is_linear_map.mk complex.add_im smul_im)
+
+lemma convex_halfspace_im_lge (r : ℝ): convex {c : ℂ | r ≤ c.im} :=
+by apply convex_halfspace_ge _ (is_linear_map.mk complex.add_im smul_im)
 
 lemma convex_sum {γ : Type*} [decidable_eq γ] (hA : convex A) (z : γ → α) (s : finset γ) :
 ∀ a : γ → ℝ, s.sum a = 1 → (∀ i ∈ s, 0 ≤ a i) → (∀ i ∈ s, z i ∈ A) → s.sum (λi, a i • z i) ∈ A :=
@@ -569,18 +619,17 @@ begin
   }
 end
 
--- Convex functions
+
 
 variables (D: set α) (D': set α) (f : α → ℝ) (g : α → ℝ)
 
+/-- Convexity of functions -/
 def convex_on (f : α → ℝ) : Prop := 
   convex D ∧
   ∀ (x y : α) (a b : ℝ), x ∈ D → y ∈ D → 0 ≤ a → 0 ≤ b → a + b = 1 → 
     f (a • x + b • y) ≤ a * f x + b * f y
 
--- TODO: do we need a lemma that just repeats the def?
-
-lemma convex_on_alt: 
+lemma convex_on_iff: 
   convex_on D f ↔ convex D ∧ ∀ {x y : α} {θ : ℝ}, 
     x ∈ D → y ∈ D → 0 ≤ θ → θ ≤ 1 → f (θ • x + (1 - θ) • y) ≤ θ * f x + (1 - θ) * f y := 
 ⟨
@@ -602,7 +651,7 @@ lemma convex_on_alt:
   end
 ⟩ 
 
-lemma convex_on_alt2: 
+lemma convex_on_iff_div: 
   convex_on D f ↔ convex D ∧ ∀ {x y : α} {a : ℝ} {b : ℝ}, 
     x ∈ D → y ∈ D → 0 ≤ a → 0 ≤ b → 0 < a + b → 
     f ((a/(a+b)) • x + (b/(a+b)) • y) ≤ (a/(a+b)) * f x + (b/(a+b)) * f y :=
@@ -833,6 +882,4 @@ begin
   let h := convex_le_of_convex_on univ (λb, dist b a) (convex_on_dist _  _ convex_univ) r,
   simp at h,
   exact h
-end
-
 end
