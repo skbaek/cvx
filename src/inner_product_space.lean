@@ -147,7 +147,7 @@ have (ip_norm u)^2 ≥ (ip_norm (ip_proj_on u H))^2,
   end,
 le_of_sqr_le_sqr (ip_norm_nonneg _) (ip_norm_nonneg _) this
 
-private lemma ip_cauchy_schwartz (u v : V) : abs ⟪u, v⟫ ≤ ip_norm u * ip_norm v :=
+lemma ip_cauchy_schwartz (u v : V) : abs ⟪u, v⟫ ≤ ip_norm u * ip_norm v :=
 begin
   by_cases h_cases : v = (0 : V),
   { rw [h_cases, inner_zero_right, abs_zero, ip_norm_zero, mul_zero] },
@@ -159,7 +159,7 @@ begin
  }
 end
 
-private lemma ip_cauchy_schwartz' (u v : V) : ⟪u, v⟫ ≤ ip_norm u * ip_norm v :=
+lemma ip_cauchy_schwartz' (u v : V) : ⟪u, v⟫ ≤ ip_norm u * ip_norm v :=
 le_trans (le_abs_self _) (ip_cauchy_schwartz _ _)
 
 private lemma ip_norm_triangle (u v : V) : ip_norm (u + v) ≤ ip_norm u + ip_norm v :=
@@ -181,7 +181,7 @@ have (ip_norm (u + v))^2 ≤ (ip_norm u + ip_norm v)^2, from
                          add_right_comm _ (ip_norm v * ip_norm v),
                          mul_comm (ip_norm v) (ip_norm u)],
 le_of_sqr_le_sqr (ip_norm_nonneg _) (add_nonneg (ip_norm_nonneg _) (ip_norm_nonneg _)) this
-
+ /-
 instance has_norm [real_inner_product_space V] :
 has_norm V := { norm := ip_norm }.
 
@@ -198,9 +198,9 @@ instance is_normed_space [real_inner_product_space V] :
   normed_space ℝ V := 
 normed_space.of_core _ _ normed_space_core
 
-
+-/
 end
-
+/-
 /- now we restate the new theorems using the norm notation -/
 
 lemma norm_squared (v : V) : ∥ v ∥^2 = ⟪v, v⟫ := ip_norm_squared v
@@ -244,6 +244,7 @@ begin
   rw pow_two at this,
   exact eq_of_sub_eq_zero ((normed_space_core.norm_eq_zero_iff _).1 ((or_self _).1 (mul_eq_zero.1 this)))
 end
+-/
 
 /- Instances of real_inner_product_space -/
 
@@ -283,5 +284,6 @@ instance product {V : Type*} [add_comm_group V] [real_inner_product_space V] {W 
       { apply eq_zero_of_inner_self_eq_zero hx.2 }
     end
 }
+
 
 end real_inner_product_space

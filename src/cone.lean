@@ -87,6 +87,25 @@ begin
   exact eq_of_mem_singleton hx
 end
 
+def inner_product_cone (α : Type*) [add_comm_group α] [real_inner_product_space α] : set (α × ℝ) :=
+  { x : α × ℝ | ⟪ x.1, x.1 ⟫ ≤ x.2 * x.2 }
+
+lemma cone_norm_cone {α : Type*} [add_comm_group α] [real_inner_product_space α] : 
+cone (inner_product_cone α) :=
+begin
+  intros x ha c hc,
+  unfold inner_product_cone at *,
+  simp [real_inner_product_space.inner_self_nonneg, real_inner_product_space.inner_smul_right, real_inner_product_space.inner_smul_left],
+  rw [← mul_assoc c c],
+  apply @le_trans _ _ _ (c * c * (x.2 * x.2)),
+  { apply mul_le_mul (le_refl _),
+    apply ha,
+    apply real_inner_product_space.inner_self_nonneg,
+    apply mul_self_nonneg },
+  { apply le_of_eq, 
+    ac_refl }
+end
+
 end basic
 
 section dual_cone
@@ -110,5 +129,18 @@ begin
   exact ha _ hz
 end
 
-end dual_cone
+lemma inner_product_cone_self_dual {α : Type*} [add_comm_group α] [real_inner_product_space α] : 
+  dual_cone (inner_product_cone α) = inner_product_cone α :=
+begin
+  unfold dual_cone,
+  unfold inner_product_cone,
+  apply set.subset.antisymm,
+  { intros y hy, 
+    simp only[set.mem_set_of_eq] at *,
+    let H := hy (- y.fst, real.sqrt ⟪ y.fst, y.fst ⟫),
+    simp at H,
+    rw [real_inner_product_space.inner_smul_left,real_inner_product_space.inner_smul_right] at H , },
+  {sorry}
+end
 
+end dual_cone

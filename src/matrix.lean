@@ -1,4 +1,5 @@
 import .vector 
+import linear_algebra.basic
 
 variables {k m n : nat} {α β : Type} [ring α] [ring β]
 
@@ -96,5 +97,18 @@ def map (f : α → β) : ∀ {m n}, matrix α m n → matrix β m n
 
 def const_mul (a : α) (A : matrix α m n) : matrix α m n :=
 map (λ x, a * x) A
+
+
+instance has_mul (α : Type*) [comm_ring α] (n : ℕ) : has_mul (matrix α n n) := {
+  mul := mul
+}
+
+instance monoid (α : Type*) [comm_ring α] (n : ℕ) : monoid (matrix α n n) := sorry
+
+instance add_comm_group (α : Type*) [comm_ring α] (m n : ℕ) : add_comm_group (matrix α m n) := sorry
+
+instance module (α : Type*) [comm_ring α] (m n : ℕ) : module α (matrix α m n) := sorry
+
+instance vector_space (α : Type*) [discrete_field α] (m n : ℕ) : vector_space α (matrix α m n) := sorry
 
 end matrix
