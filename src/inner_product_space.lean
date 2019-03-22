@@ -37,29 +37,35 @@ open real_inner_product_space
 
 notation `⟪` v `, ` w `⟫` := inner v w
 
-lemma inner_add_right (u v w : V) : ⟪u, v + w⟫ = ⟪u, v⟫ + ⟪u, w⟫ :=
+@[simp] lemma inner_add_right (u v w : V) : ⟪u, v + w⟫ = ⟪u, v⟫ + ⟪u, w⟫ :=
 by rw [inner_comm, inner_add_left, inner_comm, inner_comm w]
 
-lemma inner_smul_right (r : ℝ) (v w : V) : ⟪v, r • w⟫ = r * ⟪v, w⟫ :=
+@[simp] lemma inner_smul_right (r : ℝ) (v w : V) : ⟪v, r • w⟫ = r * ⟪v, w⟫ :=
 by rw [inner_comm, inner_smul_left, inner_comm]
 
-lemma inner_neg_left (u v : V) : ⟪-u, v⟫ = -⟪u, v⟫ :=
+@[simp] lemma inner_neg_left (u v : V) : ⟪-u, v⟫ = -⟪u, v⟫ :=
 by rw [←neg_one_smul _ u, inner_smul_left, ←neg_eq_neg_one_mul]
 
-lemma inner_neg_right (u v : V) : ⟪u, -v⟫ = -⟪u, v⟫ :=
+@[simp] lemma inner_neg_right (u v : V) : ⟪u, -v⟫ = -⟪u, v⟫ :=
 by rw [inner_comm, inner_neg_left, inner_comm]
 
-lemma inner_sub_left (u v w : V) : ⟪u - v, w⟫ = ⟪u, w⟫ - ⟪v, w⟫ :=
+lemma neg_inner_neg (x y : V): ⟪ - x, - y ⟫ = ⟪ x, y ⟫ := 
+by rw [inner_neg_left, inner_neg_right, neg_neg]
+
+@[simp] lemma inner_sub_left (u v w : V) : ⟪u - v, w⟫ = ⟪u, w⟫ - ⟪v, w⟫ :=
 by rw [sub_eq_add_neg, sub_eq_add_neg, inner_add_left, inner_neg_left]
 
-lemma inner_sub_right (u v w : V) : ⟪u, v - w⟫ = ⟪u, v⟫ - ⟪u, w⟫ :=
+@[simp] lemma inner_sub_right (u v w : V) : ⟪u, v - w⟫ = ⟪u, v⟫ - ⟪u, w⟫ :=
 by rw [sub_eq_add_neg, sub_eq_add_neg, inner_add_right, inner_neg_right]
 
-lemma inner_zero_left (v : V) : ⟪0, v⟫ = 0 :=
+@[simp] lemma inner_zero_left (v : V) : ⟪0, v⟫ = 0 :=
 by rw [←zero_smul _ v, inner_smul_left, zero_mul]
 
-lemma inner_zero_right (v : V) : ⟪v, 0⟫ = 0 :=
+@[simp] lemma inner_zero_right (v : V) : ⟪v, 0⟫ = 0 :=
 by rw [inner_comm, inner_zero_left]
+
+@[simp] lemma inner_self_pos {v : V} (h : v ≠ 0) : 0 < ⟪v, v⟫ :=
+lt_of_le_of_ne (inner_self_nonneg _) (λ  h_inner_0, h (eq_zero_of_inner_self_eq_zero h_inner_0.symm))
 
 def orthogonal (u v : V) : Prop := ⟪u, v⟫ = 0
 
@@ -248,7 +254,7 @@ end
 
 /- Instances of real_inner_product_space -/
 
-instance foo :
+instance real :
   @real_inner_product_space ℝ (ring.to_add_comm_group ℝ) :=
 { real_inner_product_space .
   inner := (*),
@@ -264,7 +270,7 @@ instance foo :
 @[simp] lemma real.no_zero_divisors_mul (x y : ℝ) : no_zero_divisors.mul x y = x * y := rfl
 
 -- set_option pp.implicit true
-instance product {V : Type*} [add_comm_group V] [real_inner_product_space V] {W : Type*} [add_comm_group W] [real_inner_product_space W]:
+instance prod {V : Type*} [add_comm_group V] [real_inner_product_space V] {W : Type*} [add_comm_group W] [real_inner_product_space W]:
   @real_inner_product_space (V × W) prod.add_comm_group:= 
 {
   inner := λ x y, ⟪x.1,y.1⟫ + ⟪x.2,y.2⟫,

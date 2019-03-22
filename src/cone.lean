@@ -87,23 +87,22 @@ begin
   exact eq_of_mem_singleton hx
 end
 
+open real_inner_product_space
+
 def inner_product_cone (α : Type*) [add_comm_group α] [real_inner_product_space α] : set (α × ℝ) :=
-  { x : α × ℝ | ⟪ x.1, x.1 ⟫ ≤ x.2 * x.2 }
+  { x : α × ℝ | real.sqrt ⟪ x.1, x.1 ⟫ ≤ x.2 }
 
 lemma cone_norm_cone {α : Type*} [add_comm_group α] [real_inner_product_space α] : 
 cone (inner_product_cone α) :=
 begin
   intros x ha c hc,
   unfold inner_product_cone at *,
-  simp [real_inner_product_space.inner_self_nonneg, real_inner_product_space.inner_smul_right, real_inner_product_space.inner_smul_left],
-  rw [← mul_assoc c c],
-  apply @le_trans _ _ _ (c * c * (x.2 * x.2)),
-  { apply mul_le_mul (le_refl _),
-    apply ha,
-    apply real_inner_product_space.inner_self_nonneg,
-    apply mul_self_nonneg },
-  { apply le_of_eq, 
-    ac_refl }
+  simp [inner_self_nonneg, inner_smul_right, inner_smul_left],
+  rw [← mul_assoc c c, real.sqrt_mul (mul_self_nonneg _), real.sqrt_mul_self hc],
+  apply mul_le_mul (le_refl _),
+  apply ha,
+  apply real.sqrt_nonneg,
+  apply hc
 end
 
 end basic
@@ -132,15 +131,67 @@ end
 lemma inner_product_cone_self_dual {α : Type*} [add_comm_group α] [real_inner_product_space α] : 
   dual_cone (inner_product_cone α) = inner_product_cone α :=
 begin
-  unfold dual_cone,
-  unfold inner_product_cone,
-  apply set.subset.antisymm,
-  { intros y hy, 
-    simp only[set.mem_set_of_eq] at *,
-    let H := hy (- y.fst, real.sqrt ⟪ y.fst, y.fst ⟫),
-    simp at H,
-    rw [real_inner_product_space.inner_smul_left,real_inner_product_space.inner_smul_right] at H , },
-  {sorry}
+  have h_ltr: dual_cone (inner_product_cone α) ⊆ inner_product_cone α,
+  begin
+    assume (y : α × ℝ) (hy : y ∈ dual_cone (inner_product_cone α)),
+    by_cases h_cases : y.fst = 0,
+    { 
+      have h : 0 ≤ ⟪ (0,1), y ⟫,
+      begin
+        apply hy,
+        unfold inner_product_cone,
+        simp [zero_le_one]
+      end,
+      show y ∈ inner_product_cone α,
+      begin
+        simp [inner_product_cone, h_cases],
+        unfold inner at h,
+        simp at h,
+        exact h
+      end
+    },
+    { 
+      have h : 0 ≤ ⟪ - y.fst, y.fst ⟫ + real.sqrt ⟪ y.fst, y.fst ⟫ * y.snd,
+      { 
+        apply hy (- y.fst, real.sqrt ⟪ y.fst, y.fst ⟫),
+        unfold inner_product_cone,
+        simp
+      },
+      have h : ⟪ y.fst, y.fst ⟫ ≤ real.sqrt ⟪ y.fst, y.fst ⟫ * y.snd,
+      { 
+        apply le_of_sub_nonneg, 
+        rwa [←neg_add_eq_sub, ←inner_neg_left]
+      },
+      have h : real.sqrt ⟪ y.fst, y.fst ⟫ * ⟪ y.fst, y.fst ⟫ ≤ real.sqrt ⟪ y.fst, y.fst ⟫ * (real.sqrt ⟪ y.fst, y.fst ⟫ * y.snd),
+        from mul_le_mul (le_refl _) h (inner_self_nonneg _) (real.sqrt_nonneg _),
+      have h : ⟪ y.fst, y.fst ⟫ * real.sqrt ⟪ y.fst, y.fst ⟫ ≤ ⟪ y.fst, y.fst ⟫ * y.snd,
+      {
+        rw [←mul_assoc, ←real.sqrt_mul (inner_self_nonneg _), real.sqrt_mul_self (inner_self_nonneg _)] at h,
+        rwa mul_comm
+      },
+      show y ∈ inner_product_cone α,
+        from le_of_mul_le_mul_left h (inner_self_pos h_cases)
+    }
+  end,
+  have h_rtl: inner_product_cone α ⊆ dual_cone (inner_product_cone α),
+  begin
+    assume (y : α × ℝ) (hy : real.sqrt ⟪ y.1, y.1 ⟫ ≤ y.2),
+    assume (x : α × ℝ) (hx :  real.sqrt ⟪ x.1, x.1 ⟫ ≤ x.2),
+    have hx' : real.sqrt ⟪ - x.1, - x.1 ⟫ ≤ x.2,
+      by simpa,
+    have h : ⟪ -x.1, y.1 ⟫ ≤ x.2 * y.2,
+      calc ⟪ -x.1, y.1 ⟫ ≤ real.sqrt ⟪ -x.1, -x.1 ⟫ * real.sqrt ⟪ y.1, y.1 ⟫ : ip_cauchy_schwartz' _ _
+                    ... ≤ x.2 * y.2                                         : mul_le_mul hx' hy (real.sqrt_nonneg _) (le_trans (real.sqrt_nonneg _) hx'),
+    show 0 ≤ ⟪ x.fst, y.fst ⟫ + x.snd * y.snd,
+    {
+      rw [inner_neg_left] at h,
+      rw add_comm,
+      convert sub_nonneg_of_le h,
+      simp
+    }
+  end,
+  show dual_cone (inner_product_cone α) = inner_product_cone α,
+    from set.subset.antisymm h_ltr h_rtl
 end
 
 end dual_cone
