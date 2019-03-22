@@ -97,7 +97,7 @@ infix `⬝` := dot_prod
 def zero_dot_prod [ring α] (v : vector α k) : 0 ⬝ v = 0 := sorry
 def dot_prod_zero [ring α] (v : vector α k) : v ⬝ 0 = 0 := sorry
 
-def sum [has_zero α] [has_add α] : ∀ {k}, vector α k → α 
+def sum [add_monoid α] : ∀ {k}, vector α k → α 
 | 0     _ := 0
 | (k+1) v := v.head + @sum k v.tail
 

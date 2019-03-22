@@ -89,7 +89,7 @@ postfix `ᵀ` : 1200 := transpose
 def inner_prod (X Y : matrix α n n) : α := 
 trace (mul Xᵀ Y)
 
-notation `⟪` X `,` Y `⟫` := inner_prod X Y 
+-- notation `⟪` X `,` Y `⟫` := inner_prod X Y 
 
 def map (f : α → β) : ∀ {m n}, matrix α m n → matrix β m n 
 | 0 n A     := nil 
