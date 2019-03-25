@@ -94,8 +94,8 @@ list.dot_prod v.val w.val
 
 infix `⬝` := dot_prod
 
-def zero_dot_prod [ring α] (v : vector α k) : 0 ⬝ v = 0 := sorry
-def dot_prod_zero [ring α] (v : vector α k) : v ⬝ 0 = 0 := sorry
+--def zero_dot_prod [ring α] (v : vector α k) : 0 ⬝ v = 0 := sorry
+--def dot_prod_zero [ring α] (v : vector α k) : v ⬝ 0 = 0 := sorry
 
 def sum [add_monoid α] : ∀ {k}, vector α k → α 
 | 0     _ := 0

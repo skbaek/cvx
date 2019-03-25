@@ -1,6 +1,4 @@
-import .inner_product_space .cone data.real.basic .matrix
-
-open matrix
+import .vector .inner_product_space .cone data.real.basic 
 
 noncomputable theory
 

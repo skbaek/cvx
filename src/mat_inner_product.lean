@@ -1,10 +1,11 @@
-import .matrix
 import .inner_product_space
 import .cone
+import .mat
 
-namespace matrix
+namespace mat
 
-noncomputable instance inner_product (n : ℕ) : real_inner_product_space (matrix ℝ n n) := {
+noncomputable instance inner_product (n : ℕ) : 
+  real_inner_product_space (mat ℝ n n) := {
   inner := λ A B, trace (A * B),
   inner_add_left := sorry,
   inner_smul_left := sorry,
@@ -13,6 +14,6 @@ noncomputable instance inner_product (n : ℕ) : real_inner_product_space (matri
   eq_zero_of_inner_self_eq_zero := sorry,
 }
 
-end matrix
+end mat
 
-#check λ n, inner_product_cone (matrix ℝ n n)
+#check λ n : nat, inner_product_cone (mat ℝ n n) 

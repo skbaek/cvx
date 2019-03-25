@@ -1,4 +1,8 @@
-import .matrix data.real.basic
+import .mat data.real.basic
+
+-- To do : update using mat
+
+#exit
 
 open matrix
 
