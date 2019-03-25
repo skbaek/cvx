@@ -1,62 +1,61 @@
-import .vector .inner_product_space .cone data.real.basic 
-
-noncomputable theory
+import .mat .cone data.real.basic 
 
 variables {k m n : nat}
 
 namespace cone_program
 
-variables {α : Type} [add_comm_group α] [real_inner_product_space α] (K : set α) (K' : set α)
+@[reducible] def rowvec (α : Type) [ring α] (n : nat) : Type := mat α 1 n
+@[reducible] def colvec (α : Type) [ring α] (n : nat) : Type := mat α n 1
 
-structure primal (α : Type) (m : nat) := 
-(obf : α)
-(lhs : vector α m)
-(rhs : vector ℝ m)
+structure primal (m n : nat) := 
+(obf : rowvec ℝ n)
+(lhs : mat ℝ m n)
+(rhs : colvec ℝ m)
 
-def mat_mul_vec (A : vector α m) (x : α) : (vector ℝ m) := A.map (λ (a : α), ⟪ a, x ⟫)
+open matrix
 
-local infix `⊚` : 70 := mat_mul_vec
+variables (K : set (colvec ℝ n)) (K' : set (rowvec ℝ n))
 
-def vec_mul_mat (A : vector α m) (y : vector ℝ m) : α := (vector.map₂ (•) y A).sum
+local infix ` ⬝ ` : 70 := matrix.mul
 
-local infix `⊙` : 70 := vec_mul_mat
+instance one_by_one_matrix : has_coe (mat ℝ 1 1) ℝ := 
+  ⟨λ A : mat ℝ 1 1, A 0 0⟩
 
-def primal.feasible (P : primal α m) (x : α) : Prop := 
+def primal.feasible (P : primal m n) (x : colvec ℝ n) : Prop := 
 let ⟨c,A,b⟩ := P in
-A ⊚ x = b ∧ x ∈ K
+  A ⬝ x = b ∧ x ∈ K
 
-def primal.optimal (P : primal α n) (x : α) : Prop := 
+def primal.optimal (P : primal m n) (x : colvec ℝ n) : Prop := 
 let c := P.obf in
-P.feasible K x ∧ ∀ y, P.feasible K y → ⟪c, x⟫ ≤ ⟪c, y⟫
+P.feasible K x ∧ ∀ y, P.feasible K y → (c ⬝ x : ℝ) ≤ c ⬝ y
 
-structure dual (α : Type) (m : nat) := 
-(obf : vector real m)
-(lhs : vector α m)
-(rhs : α)
+structure dual (m n : nat) := 
+(obf : colvec ℝ m)
+(lhs : mat ℝ m n)
+(rhs : rowvec ℝ n)
 
-
-def dual.feasible (D : dual α m) (y : vector real m) : Prop := 
+def dual.feasible (D : dual m n) (y : rowvec ℝ m) : Prop := 
 let ⟨b,A,c⟩ := D in
-c - A ⊙ y ∈ K'.
+  c - y ⬝ A ∈ K'
 
-def dual.optimal (D : dual α m) (y : vector real m) : Prop := 
+def dual.optimal (D : dual m n) (y : rowvec ℝ m) : Prop := 
 let b := D.obf in
-D.feasible K' y ∧ ∀ x, D.feasible K' x → b ⬝ x ≤ b ⬝ y
+D.feasible K' y ∧ ∀ x, D.feasible K' x → (x ⬝ b : ℝ) ≤ y ⬝ b
 
-def primal.to_dual : primal α m → dual α m
+def primal.to_dual : primal m n → dual m n
 | ⟨c,A,b⟩ := ⟨b,A,c⟩ 
 
-lemma lower_bound {α : Type} [hα : add_comm_group α] [hα' : real_inner_product_space α] 
-(K : set α) (hK : cone K)
-(P : primal α m) (x : α) (h_x_opt : P.optimal K x) 
-(y : vector ℝ m) (hy : P.to_dual.feasible (dual_cone K) y) : 
-P.to_dual.obf ⬝ y ≤ ⟪ P.obf, x ⟫ :=
+lemma cone_duality 
+--TODO : (hK : cone K)
+(P : primal m n) (x : colvec ℝ n) (y : rowvec ℝ m)
+(hx : P.feasible K x) (hy : P.to_dual.feasible (sorry /-dual_cone K-/) y) : 
+(y ⬝ P.to_dual.obf : ℝ) ≤ P.obf ⬝ x :=
 begin
   let c := P.obf,
   let A := P.lhs,
   let b := P.rhs,
 
-  have h : - b ⬝ y = ⟪ c, x ⟫ - ⟪ A ⊙ y + c, x ⟫ + y ⬝ (A ⊚ x - b),
+  have h : - y ⬝ b = c ⬝ x - (y ⬝ A + c) ⬝ x + y ⬝ (A ⬝ x - b),
   begin
     simp [real_inner_product_space.inner_add_left],
   end,

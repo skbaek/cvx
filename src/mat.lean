@@ -8,7 +8,7 @@ matrix (fin m) (fin n) α
 
 @[reducible] def vec (α : Type) [ring α] (n : nat) : Type := (fin n) → α 
 
-local notation v `⬝` w := matrix.vec_mul_vec v w
+local notation v `⬝` w := matrix.vec_mul_vec v w --TODO: matrix.vec_mul_vec is not the dot product but the outer vector product
 
 namespace mat
 
