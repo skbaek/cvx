@@ -1,11 +1,8 @@
-import .mat .cone data.real.basic 
+import .rowvec .cone data.real.basic 
 
 variables {k m n : nat}
 
 namespace cone_program
-
-@[reducible] def rowvec (α : Type) [ring α] (n : nat) : Type := mat α 1 n
-@[reducible] def colvec (α : Type) [ring α] (n : nat) : Type := mat α n 1
 
 structure primal (m n : nat) := 
 (obf : rowvec ℝ n)
@@ -17,9 +14,9 @@ open matrix
 variables (K : set (colvec ℝ n)) (K' : set (rowvec ℝ n))
 
 local infix ` ⬝ ` : 70 := matrix.mul
+local notation x , `ᵀ` := transpose x
 
-instance one_by_one_matrix : has_coe (mat ℝ 1 1) ℝ := 
-  ⟨λ A : mat ℝ 1 1, A 0 0⟩
+
 
 def primal.feasible (P : primal m n) (x : colvec ℝ n) : Prop := 
 let ⟨c,A,b⟩ := P in
@@ -46,7 +43,7 @@ def primal.to_dual : primal m n → dual m n
 | ⟨c,A,b⟩ := ⟨b,A,c⟩ 
 
 lemma cone_duality 
---TODO : (hK : cone K)
+--TODO (hK : cone K)
 (P : primal m n) (x : colvec ℝ n) (y : rowvec ℝ m)
 (hx : P.feasible K x) (hy : P.to_dual.feasible (sorry /-dual_cone K-/) y) : 
 (y ⬝ P.to_dual.obf : ℝ) ≤ P.obf ⬝ x :=

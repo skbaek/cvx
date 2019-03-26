@@ -21,8 +21,12 @@ end
 
 -- TODO: Why do I need to extend add_comm_group
 
-class real_inner_product_space (V : Type*) [add_comm_group V] extends vector_space ℝ V :=
-(inner : V → V → ℝ)
+class has_inner (V : Type*) (W : Type*):=
+(inner : W → W → V)
+
+notation `⟪` v `, ` w `⟫` := has_inner.inner ℝ v w
+
+class real_inner_product_space (V : Type*) [add_comm_group V] extends has_inner ℝ V, vector_space ℝ V :=
 (inner_add_left : ∀ u v w, inner (u + v) w = inner u w + inner v w)
 (inner_smul_left : ∀ r v w, inner (r • v) w = r * inner v w)
 (inner_comm : ∀ v w, inner v w = inner w v)
@@ -31,11 +35,11 @@ class real_inner_product_space (V : Type*) [add_comm_group V] extends vector_spa
 
 namespace real_inner_product_space
 
-variables {V : Type*} [add_comm_group V] [real_inner_product_space V] {W : Type*} [add_comm_group W] [real_inner_product_space W]
+variables 
+  {V : Type*} [add_comm_group V] [real_inner_product_space V] 
+  {W : Type*} [add_comm_group W] [real_inner_product_space W]
 
 open real_inner_product_space
-
-notation `⟪` v `, ` w `⟫` := inner v w
 
 @[simp] lemma inner_add_right (u v w : V) : ⟪u, v + w⟫ = ⟪u, v⟫ + ⟪u, w⟫ :=
 by rw [inner_comm, inner_add_left, inner_comm, inner_comm w]
@@ -153,7 +157,7 @@ have (ip_norm u)^2 ≥ (ip_norm (ip_proj_on u H))^2,
   end,
 le_of_sqr_le_sqr (ip_norm_nonneg _) (ip_norm_nonneg _) this
 
-lemma ip_cauchy_schwartz (u v : V) : abs ⟪u, v⟫ ≤ ip_norm u * ip_norm v :=
+private lemma ip_cauchy_schwartz (u v : V) : abs ⟪u, v⟫ ≤ ip_norm u * ip_norm v :=
 begin
   by_cases h_cases : v = (0 : V),
   { rw [h_cases, inner_zero_right, abs_zero, ip_norm_zero, mul_zero] },
@@ -165,7 +169,7 @@ begin
  }
 end
 
-lemma ip_cauchy_schwartz' (u v : V) : ⟪u, v⟫ ≤ ip_norm u * ip_norm v :=
+private lemma ip_cauchy_schwartz' (u v : V) : ⟪u, v⟫ ≤ ip_norm u * ip_norm v :=
 le_trans (le_abs_self _) (ip_cauchy_schwartz _ _)
 
 private lemma ip_norm_triangle (u v : V) : ip_norm (u + v) ≤ ip_norm u + ip_norm v :=
@@ -187,7 +191,8 @@ have (ip_norm (u + v))^2 ≤ (ip_norm u + ip_norm v)^2, from
                          add_right_comm _ (ip_norm v * ip_norm v),
                          mul_comm (ip_norm v) (ip_norm u)],
 le_of_sqr_le_sqr (ip_norm_nonneg _) (add_nonneg (ip_norm_nonneg _) (ip_norm_nonneg _)) this
- /-
+ 
+@[priority 0]
 instance has_norm [real_inner_product_space V] :
 has_norm V := { norm := ip_norm }.
 
@@ -204,9 +209,9 @@ instance is_normed_space [real_inner_product_space V] :
   normed_space ℝ V := 
 normed_space.of_core _ _ normed_space_core
 
--/
+
 end
-/-
+
 /- now we restate the new theorems using the norm notation -/
 
 lemma norm_squared (v : V) : ∥ v ∥^2 = ⟪v, v⟫ := ip_norm_squared v
@@ -250,7 +255,7 @@ begin
   rw pow_two at this,
   exact eq_of_sub_eq_zero ((normed_space_core.norm_eq_zero_iff _).1 ((or_self _).1 (mul_eq_zero.1 this)))
 end
--/
+
 
 /- Instances of real_inner_product_space -/
 
@@ -274,7 +279,7 @@ instance prod {V : Type*} [add_comm_group V] [real_inner_product_space V] {W : T
   @real_inner_product_space (V × W) prod.add_comm_group:= 
 {
   inner := λ x y, ⟪x.1,y.1⟫ + ⟪x.2,y.2⟫,
-  inner_add_left := begin simp [inner_add_left] end,
+  inner_add_left := begin simp [inner_add_left], sorry end,
   inner_smul_left := begin simp [inner_smul_left, mul_add], end,
   inner_comm := by simp [inner_comm],
   inner_self_nonneg := by intros; exact add_nonneg (inner_self_nonneg _) (inner_self_nonneg _),
