@@ -54,7 +54,7 @@ begin
 
   have h : - y ⬝ b = c ⬝ x - (y ⬝ A + c) ⬝ x + y ⬝ (A ⬝ x - b),
   begin
-    simp [real_inner_product_space.inner_add_left],
+    simp only [real_inner_product_space.inner_add_left],
   end,
 
 end

@@ -1,5 +1,51 @@
 import data.matrix data.real.basic
 
+
+universes u v
+
+namespace matrix
+variables {l m n o : Type u} [fintype l] [fintype m] [fintype n] [fintype o]
+variables {α : Type v}
+
+-- TODO: move / generalize in matrix.lean
+lemma mul_add' [ring α] (L : matrix m n α) (M N : matrix n l α) : L.mul (M + N) = L.mul M + L.mul N :=
+begin 
+  ext i j, 
+  unfold matrix.mul, 
+  simp [left_distrib, finset.sum_add_distrib] 
+end
+
+lemma mul_smul [comm_ring α] (M : matrix m n α) (a : α) (N : matrix n l α) : M.mul (a • N) = a • M.mul N :=
+begin
+  ext i j,
+  unfold matrix.mul,
+  unfold has_scalar.smul,
+  rw finset.mul_sum,
+  congr,
+  ext,
+  ring
+end
+
+local postfix `ᵀ` : 1500 := transpose
+
+lemma transpose_transpose (M : matrix m n α) : 
+  Mᵀᵀ = M :=
+by ext; unfold transpose
+
+lemma transpose_mul [comm_ring α] (M : matrix m n α) (N : matrix n l α) : 
+  (M.mul N)ᵀ = Nᵀ.mul Mᵀ  := 
+begin
+  ext i j, 
+  unfold matrix.mul,
+  unfold transpose,
+  congr,
+  ext,
+  ring
+end
+
+end matrix
+
+
 variables {k m n : nat}
 variables {α : Type} [ring α]
 

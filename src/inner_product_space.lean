@@ -18,15 +18,12 @@ begin
   exact  (lt_of_lt_of_le (mul_self_lt_mul_self hb h) hab)
 end
 
-
--- TODO: Why do I need to extend add_comm_group
-
 class has_inner (V : Type*) (W : Type*):=
 (inner : W → W → V)
 
 notation `⟪` v `, ` w `⟫` := has_inner.inner ℝ v w
 
-class real_inner_product_space (V : Type*) [add_comm_group V] extends has_inner ℝ V, vector_space ℝ V :=
+class real_inner_product_space (V : Type*) extends has_inner ℝ V, add_comm_group V, vector_space ℝ V :=
 (inner_add_left : ∀ u v w, inner (u + v) w = inner u w + inner v w)
 (inner_smul_left : ∀ r v w, inner (r • v) w = r * inner v w)
 (inner_comm : ∀ v w, inner v w = inner w v)
@@ -36,8 +33,8 @@ class real_inner_product_space (V : Type*) [add_comm_group V] extends has_inner 
 namespace real_inner_product_space
 
 variables 
-  {V : Type*} [add_comm_group V] [real_inner_product_space V] 
-  {W : Type*} [add_comm_group W] [real_inner_product_space W]
+  {V : Type*} [real_inner_product_space V] 
+  {W : Type*} [real_inner_product_space W]
 
 open real_inner_product_space
 
@@ -260,7 +257,7 @@ end
 /- Instances of real_inner_product_space -/
 
 instance real :
-  @real_inner_product_space ℝ (ring.to_add_comm_group ℝ) :=
+  real_inner_product_space ℝ :=
 { real_inner_product_space .
   inner := (*),
   inner_add_left := add_mul,
@@ -274,12 +271,20 @@ instance real :
 @[simp] lemma real.ring_add (x y : ℝ) : ring.add x y = x + y := rfl
 @[simp] lemma real.no_zero_divisors_mul (x y : ℝ) : no_zero_divisors.mul x y = x * y := rfl
 
--- set_option pp.implicit true
-instance prod {V : Type*} [add_comm_group V] [real_inner_product_space V] {W : Type*} [add_comm_group W] [real_inner_product_space W]:
-  @real_inner_product_space (V × W) prod.add_comm_group:= 
+set_option pp.notation false
+instance prod {V : Type*} [real_inner_product_space V] {W : Type*} [real_inner_product_space W]:
+  real_inner_product_space (V × W):= 
 {
   inner := λ x y, ⟪x.1,y.1⟫ + ⟪x.2,y.2⟫,
-  inner_add_left := begin simp [inner_add_left], sorry end,
+  inner_add_left := 
+  begin 
+    intros u v w, 
+    dsimp [inner_add_left],
+    let H1 := @inner_add_left V _ u.fst v.fst w.fst, 
+    let H2 := @inner_add_left W _ u.snd v.snd w.snd,
+    unfold add_group.add, unfold add_comm_group.add, unfold add_comm_semigroup.add, unfold add_semigroup.add,
+    simp [H1, H2] --TODO: why so complicated?
+  end,
   inner_smul_left := begin simp [inner_smul_left, mul_add], end,
   inner_comm := by simp [inner_comm],
   inner_self_nonneg := by intros; exact add_nonneg (inner_self_nonneg _) (inner_self_nonneg _),

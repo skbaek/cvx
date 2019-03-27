@@ -112,7 +112,7 @@ section normed
 def norm_cone (α : Type*) [has_norm α] : set (α × ℝ) :=
   { x : α × ℝ | ∥ x.1 ∥ ≤ x.2 }
 
-
+/-
 instance normed_space.to_has_scalar {α} [normed_space ℝ α] : has_scalar ℝ (α × ℝ) := 
 begin
   letI := @normed_field.to_normed_space ℝ _,
@@ -121,7 +121,7 @@ begin
   letI := vector_space.to_module ℝ (α × ℝ),
   letI A := @module.to_semimodule ℝ (α × ℝ) _ _ _,
   exact @semimodule.to_has_scalar ℝ (α × ℝ) _ _ A,
-end
+end-/
 
 lemma cone_norm_cone {α : Type*} [normed_space ℝ α] : 
 cone (norm_cone α) :=
@@ -144,7 +144,6 @@ def dual_cone {α : Type*} [has_inner ℝ α] (A : set α) : set α :=
 open real_inner_product_space
 
 variables {α : Type*}
-  [add_comm_group α] 
   [real_inner_product_space α] 
   (A : set α) (B : set α)
 
@@ -156,12 +155,13 @@ begin
   exact ha _ hz
 end
 
+/-
 instance real_inner_product_space.to_has_inner_prod : has_inner ℝ (α × ℝ) := 
 begin
   letI := @normed_field.to_normed_space ℝ _,
   letI := @prod.normed_space ℝ _ α ℝ _ _,
   exact @real_inner_product_space.to_has_inner _ _ _,
-end
+end-/
 
 -- set_option trace.class_instances true
 
