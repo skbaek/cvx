@@ -8,6 +8,13 @@ variables {l m n o : Type u} [fintype l] [fintype m] [fintype n] [fintype o]
 variables {α : Type v}
 
 -- TODO: move / generalize in matrix.lean
+lemma mul_zero' [ring α] (M : matrix m n α) : M.mul (0 : matrix n l α) = 0 :=
+begin 
+  ext i j, 
+  unfold matrix.mul, 
+  simp
+end
+
 lemma mul_add' [ring α] (L : matrix m n α) (M N : matrix n l α) : L.mul (M + N) = L.mul M + L.mul N :=
 begin 
   ext i j, 
@@ -15,7 +22,45 @@ begin
   simp [left_distrib, finset.sum_add_distrib] 
 end
 
-lemma mul_smul [comm_ring α] (M : matrix m n α) (a : α) (N : matrix n l α) : M.mul (a • N) = a • M.mul N :=
+lemma add_mul' [ring α] (M N : matrix m n α) (L : matrix n l α) : (M + N).mul L = M.mul L + N.mul L :=
+begin 
+  ext i j, 
+  unfold matrix.mul, 
+  simp [right_distrib, finset.sum_add_distrib] 
+end
+
+@[simp] lemma mul_neg [ring α] (M : matrix m n α) (N : matrix n l α) : M.mul (-N) = - M.mul N :=
+begin 
+  ext i j,
+  unfold matrix.mul,
+  simp,
+end
+
+@[simp] lemma neg_mul [ring α] (M : matrix m n α) (N : matrix n l α) : (-M).mul N = - M.mul N :=
+begin 
+  ext i j,
+  unfold matrix.mul,
+  simp,
+end
+
+lemma mul_sub' [ring α] (L : matrix m n α) (M N : matrix n l α) : L.mul (M - N) = L.mul M - L.mul N :=
+by simp [mul_add']
+
+lemma sub_mul' [ring α] (M N : matrix m n α) (L : matrix n l α) : (M - N).mul L = M.mul L - N.mul L :=
+by simp [add_mul']
+
+@[simp] lemma mul_smul [comm_ring α] (M : matrix m n α) (a : α) (N : matrix n l α) : M.mul (a • N) = a • M.mul N :=
+begin
+  ext i j,
+  unfold matrix.mul,
+  unfold has_scalar.smul,
+  rw finset.mul_sum,
+  congr,
+  ext,
+  ring
+end
+
+@[simp] lemma smul_mul [comm_ring α] (M : matrix m n α) (a : α) (N : matrix n l α) : (a • M).mul N = a • M.mul N :=
 begin
   ext i j,
   unfold matrix.mul,
@@ -42,6 +87,9 @@ begin
   ext,
   ring
 end
+
+@[simp] lemma transpose_zero [has_zero α] : (0 : matrix m n α)ᵀ = 0 := 
+by ext i j; refl
 
 end matrix
 
@@ -89,10 +137,7 @@ A ≼ B ∧ A ≠ B
 infix `≺` : 1200 := loewner
 infix `≻` : 1200 := λ A B, strict_loewner B A
 
-def transpose (A : mat α m n) : mat α n m := 
-matrix.transpose A
-
-postfix `ᵀ` : 1500 := transpose
+postfix `ᵀ` : 1500 := matrix.transpose
 
 def get_diagonal (A : mat α m m) : mat α m m | i j := 
 if i = j 

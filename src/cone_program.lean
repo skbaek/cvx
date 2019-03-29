@@ -1,4 +1,4 @@
-import .rowvec .cone data.real.basic 
+import .colvec .cone data.real.basic 
 
 variables {k m n : nat}
 
@@ -15,8 +15,6 @@ variables (K : set (colvec ℝ n)) (K' : set (rowvec ℝ n))
 
 local infix ` ⬝ ` : 70 := matrix.mul
 local notation x , `ᵀ` := transpose x
-
-
 
 def primal.feasible (P : primal m n) (x : colvec ℝ n) : Prop := 
 let ⟨c,A,b⟩ := P in
@@ -43,9 +41,9 @@ def primal.to_dual : primal m n → dual m n
 | ⟨c,A,b⟩ := ⟨b,A,c⟩ 
 
 lemma cone_duality 
---TODO (hK : cone K)
+(hK : cone K)
 (P : primal m n) (x : colvec ℝ n) (y : rowvec ℝ m)
-(hx : P.feasible K x) (hy : P.to_dual.feasible (sorry /-dual_cone K-/) y) : 
+(hx : P.feasible K x) (hy : P.to_dual.feasible (transpose '' (dual_cone K)) y) : 
 (y ⬝ P.to_dual.obf : ℝ) ≤ P.obf ⬝ x :=
 begin
   let c := P.obf,
@@ -53,9 +51,15 @@ begin
   let b := P.rhs,
 
   have h : - y ⬝ b = c ⬝ x - (y ⬝ A + c) ⬝ x + y ⬝ (A ⬝ x - b),
-  begin
-    simp only [real_inner_product_space.inner_add_left],
-  end,
+  {
+    rw [matrix.add_mul', matrix.mul_sub', matrix.mul_assoc],
+    simp
+  },
+
+  have h: (0:ℝ) ≤ (y ⬝ A + c) ⬝ x,
+  {
+    unfold dual_cone at hy,
+  }
 
 end
 

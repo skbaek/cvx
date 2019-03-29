@@ -23,11 +23,6 @@ open set
 def cone (A : set α) : Prop :=
   ∀x ∈ A, ∀(c : ℝ), 0 ≤ c → c • x ∈ A
 
--- variables 
---   [add_comm_group α] 
---   [V : vector_space ℝ α] 
--- inclu
-
 lemma cone_empty : 
   cone ({} : set α) := 
 by finish
@@ -112,17 +107,6 @@ section normed
 def norm_cone (α : Type*) [has_norm α] : set (α × ℝ) :=
   { x : α × ℝ | ∥ x.1 ∥ ≤ x.2 }
 
-/-
-instance normed_space.to_has_scalar {α} [normed_space ℝ α] : has_scalar ℝ (α × ℝ) := 
-begin
-  letI := @normed_field.to_normed_space ℝ _,
-  letI := @prod.normed_space ℝ _ α ℝ _ _,
-  letI := normed_space.to_vector_space (α × ℝ),
-  letI := vector_space.to_module ℝ (α × ℝ),
-  letI A := @module.to_semimodule ℝ (α × ℝ) _ _ _,
-  exact @semimodule.to_has_scalar ℝ (α × ℝ) _ _ A,
-end-/
-
 lemma cone_norm_cone {α : Type*} [normed_space ℝ α] : 
 cone (norm_cone α) :=
 begin
@@ -154,16 +138,6 @@ begin
   apply zero_le_mul hc,
   exact ha _ hz
 end
-
-/-
-instance real_inner_product_space.to_has_inner_prod : has_inner ℝ (α × ℝ) := 
-begin
-  letI := @normed_field.to_normed_space ℝ _,
-  letI := @prod.normed_space ℝ _ α ℝ _ _,
-  exact @real_inner_product_space.to_has_inner _ _ _,
-end-/
-
--- set_option trace.class_instances true
 
 lemma norm_cone_self_dual : 
   dual_cone (norm_cone α) = norm_cone α :=
