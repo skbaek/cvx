@@ -22,6 +22,30 @@ by simp [coe]
   coe (a • A) = a • coe A :=
 by simp [coe, has_scalar.smul]
 
+@[simp] lemma coe_neg (α : Type*) [ring α] (A : mat α 1 1) : 
+  coe (- A) = - coe A :=
+by simp [coe]
+
+@[simp] lemma coe_zero (α : Type*) [ring α] : 
+  coe (0 : mat α 1 1) = 0 :=
+by simp [coe]
+
+
+-- TODO: move
+lemma fin.eq_zero_fin1 (i : fin 1) : i = 0 :=
+begin
+  rw fin.eq_iff_veq,
+  apply nat.eq_zero_of_le_zero (nat.le_of_lt_succ i.2)
+end
+
+@[simp] lemma transpose (α : Type*) [ring α] (A : mat α 1 1) : Aᵀ = A :=
+begin
+  ext i j,
+  unfold matrix.transpose,
+  rw [fin.eq_zero_fin1 i, fin.eq_zero_fin1 j]
+end
+
+
 end one_by_one_matrix
 
 section move
@@ -30,8 +54,6 @@ variables {α : Type} [ring α] {k m n : nat}
 -- TODO: move
 local infix ` ⬝ ` : 70 := matrix.mul
 def inner (v w : colvec α n) : α := wᵀ ⬝ v
-notation `⟪` v `, ` w `⟫` := inner v w
-
 
 --TODO: move
 lemma fin1_eq_zero (i : fin 1): i = 0 :=
@@ -76,7 +98,7 @@ begin
     simp [hi, hj] }
 end
 
-lemma inner_add_left : ⟪ x + y, z ⟫ = ⟪ x, z ⟫ + ⟪ y, z ⟫  := 
+lemma inner_add_left : inner (x + y) z = inner x z + inner y z  := 
 begin 
   dsimp [inner, colvec, mat],
   rw matrix.mul_add', 
@@ -140,6 +162,7 @@ begin
 end
 
 end colvec
+
 
 noncomputable instance colvec.real_inner_product_space (n : ℕ) : real_inner_product_space (colvec ℝ n) :=
 {

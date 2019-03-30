@@ -88,6 +88,10 @@ begin
   ring
 end
 
+@[simp] lemma transpose_neg [comm_ring α] (M : matrix m n α) : 
+  (- M)ᵀ = - Mᵀ  := 
+by ext i j; refl
+
 @[simp] lemma transpose_zero [has_zero α] : (0 : matrix m n α)ᵀ = 0 := 
 by ext i j; refl
 

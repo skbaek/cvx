@@ -19,7 +19,7 @@ begin
 end
 
 def second_order_cone (n : nat): set (colvec ℝ (n + 1)) :=
-{ x : colvec ℝ (n + 1) | ∥ x.butlast ∥  ≤ x.last }
+{ x : colvec ℝ (n + 1) | ∥ x.butlast ∥ ≤ x.last }
 
 lemma cone_second_order_cone : 
 cone (second_order_cone n) :=
@@ -54,50 +54,73 @@ begin
           rwa [matrix.transpose_zero, norm_zero, rowvec.last_transpose] },
         { exact matrix.transpose_transpose _ } }
     },
-    { --TODO ...
-    
-    have h : 0 ≤ ⟪ - y.fst, y.fst ⟫ + real.sqrt ⟪ y.fst, y.fst ⟫ * y.snd,
-      { 
-        apply hy (- y.fst, real.sqrt ⟪ y.fst, y.fst ⟫),
-        unfold norm_cone,
-        simp,
-        refl,
+    { let y1 := y.butlast,
+      let y2 := y.last,
+      have h : (0 : ℝ) ≤ real.sqrt (y1 ⬝ y1ᵀ) * y2 + (- y1) ⬝ y1ᵀ,
+      { convert hy (colvec.snoc (- y1ᵀ) (real.sqrt (y1 ⬝ y1ᵀ))) _,
+        rw mul_comm,
+        rw [← matrix.transpose_transpose (-y1)],
+        rw [← matrix.transpose_mul y1 (-y1)ᵀ, one_by_one_matrix.transpose],
+        convert rowvec.mul_last_add_mul_butlast _ _,
+        { simp },
+        { simp },
+        simp [second_order_cone],
+        refl
       },
-      have h : ⟪ y.fst, y.fst ⟫ ≤ real.sqrt ⟪ y.fst, y.fst ⟫ * y.snd,
+      have h : (y1 ⬝ y1ᵀ : ℝ) ≤ real.sqrt (y1 ⬝ y1ᵀ) * y2,
       { 
-        apply le_of_sub_nonneg, 
-        rw [←@neg_add_eq_sub ℝ (ring.to_add_comm_group _)],
-        rwa [ ←inner_neg_left]
+        apply le_of_sub_nonneg,
+        rw matrix.neg_mul at h,
+        rwa sub_eq_add_neg,
       },
-      have h : real.sqrt ⟪ y.fst, y.fst ⟫ * ⟪ y.fst, y.fst ⟫ ≤ real.sqrt ⟪ y.fst, y.fst ⟫ * (real.sqrt ⟪ y.fst, y.fst ⟫ * y.snd),
-        from mul_le_mul (le_refl _) h (inner_self_nonneg _) (real.sqrt_nonneg _),
-      have h : ⟪ y.fst, y.fst ⟫ * real.sqrt ⟪ y.fst, y.fst ⟫ ≤ ⟪ y.fst, y.fst ⟫ * y.snd,
+      have h : real.sqrt (y1 ⬝ y1ᵀ) * (y1 ⬝ y1ᵀ) ≤ real.sqrt (y1 ⬝ y1ᵀ) * (real.sqrt (y1 ⬝ y1ᵀ) * y2),
+        from mul_le_mul (le_refl _) h (colvec.inner_self_nonneg _) (real.sqrt_nonneg _),
+      have h : (y1 ⬝ y1ᵀ : ℝ) * real.sqrt (y1 ⬝ y1ᵀ) ≤ (y1 ⬝ y1ᵀ) * y2,
       {
-        rw [←mul_assoc, ←real.sqrt_mul (inner_self_nonneg _), real.sqrt_mul_self (inner_self_nonneg _)] at h,
-        rwa mul_comm
+        rw [←mul_assoc, mul_comm] at h,
+        convert h,
+        convert (@real.sqrt_mul (y1 ⬝ y1ᵀ) (rowvec.inner_self_nonneg _) (y1 ⬝ y1ᵀ)),
+        apply (real.sqrt_mul_self (rowvec.inner_self_nonneg _)).symm
       },
-      show y ∈ norm_cone α,
-        from le_of_mul_le_mul_left h (inner_self_pos h_cases)
+      show y ∈ (second_order_cone n)ᵀ,
+      {
+        use yᵀ,
+        split,
+        { apply le_of_mul_le_mul_left h (rowvec.inner_self_pos h_cases) },
+        { rw matrix.transpose_transpose }
+      } 
     }
   },
-  have h_rtl: norm_cone α ⊆ dual_cone (norm_cone α),
+  have h_rtl: (second_order_cone n)ᵀ ⊆ vec_dual_cone (second_order_cone n),
   begin
-    assume (y : α × ℝ) (hy : real.sqrt ⟪ y.1, y.1 ⟫ ≤ y.2),
-    assume (x : α × ℝ) (hx :  real.sqrt ⟪ x.1, x.1 ⟫ ≤ x.2),
-    have hx' : real.sqrt ⟪ - x.1, - x.1 ⟫ ≤ x.2,
+    assume (y : rowvec ℝ (n + 1)),
+    assume (hy : y ∈ (second_order_cone n)ᵀ),
+    assume (x : colvec ℝ (n + 1)) (hx : real.sqrt ⟪ x.butlast, x.butlast ⟫ ≤ x.last),
+    have hy' : real.sqrt ⟪ colvec.butlast yᵀ, colvec.butlast yᵀ ⟫ ≤ colvec.last yᵀ,
+    begin
+      apply exists.elim hy,
+      intros yt hyt,
+      rw [hyt.2.symm, matrix.transpose_transpose],
+      apply hyt.1
+    end,
+    have hx' : real.sqrt ⟪ - x.butlast, - x.butlast ⟫ ≤ x.last,
       by simpa,
-    have h : ⟪ -x.1, y.1 ⟫ ≤ x.2 * y.2,
-      calc ⟪ -x.1, y.1 ⟫ ≤ real.sqrt ⟪ -x.1, -x.1 ⟫ * real.sqrt ⟪ y.1, y.1 ⟫ : cauchy_schwartz' _ _
-                    ... ≤ x.2 * y.2                                         : mul_le_mul hx' hy (real.sqrt_nonneg _) (le_trans (real.sqrt_nonneg _) hx'),
-    show 0 ≤ ⟪ x.fst, y.fst ⟫ + x.snd * y.snd,
+    have h : ⟪ -x.butlast, colvec.butlast yᵀ ⟫ ≤ x.last * colvec.last yᵀ,
+      calc ⟪ -x.butlast, colvec.butlast yᵀ ⟫ 
+            ≤ real.sqrt ⟪ -x.butlast, -x.butlast ⟫ * real.sqrt ⟪ colvec.butlast yᵀ, colvec.butlast yᵀ ⟫ 
+              : real_inner_product_space.cauchy_schwartz' _ _
+        ... ≤ x.last * colvec.last yᵀ                                        
+              : mul_le_mul hx' hy' (real.sqrt_nonneg _) (le_trans (real.sqrt_nonneg _) hx'),
+    show (0 : ℝ) ≤ y ⬝ x,
     {
-      rw [inner_neg_left] at h,
-      rw add_comm,
+      rw [← rowvec.mul_last_add_mul_butlast],
+      rw [real_inner_product_space.inner_neg_left] at h,
+      rw mul_comm,
       convert sub_nonneg_of_le h,
-      simp
+      simp [has_inner.inner, inner, matrix.transpose_transpose],
     }
   end,
-  show dual_cone (norm_cone α) = norm_cone α,
+  show vec_dual_cone (second_order_cone n) = (second_order_cone n)ᵀ,
     from set.subset.antisymm h_ltr h_rtl
 end
 
