@@ -2,6 +2,8 @@ import data.vector .list
 
 variables {α : Type} {k m n : nat}
 
+open tactic
+
 namespace vector
 
 def zero [has_zero α] (m) : vector α m := 
@@ -102,3 +104,23 @@ def sum [add_monoid α] : ∀ {k}, vector α k → α
 | (k+1) v := v.head + @sum k v.tail
 
 end vector
+
+/- (mk_meta_vector k) returns the expr of a vector of length k,
+   where the expr of each entry is a metavariable. -/ 
+meta def mk_meta_vector (αx : expr) : nat → tactic expr 
+| 0     := to_expr ``(@vector.nil %%αx)
+| (k+1) := 
+  do x ← mk_meta_var αx,
+     vx ← mk_meta_vector k,
+     to_expr ``(@vector.cons %%αx %%`(k) %%x %%vx)
+
+/- (vector₂.mk_meta m n) returns the expr of an m × n vector₂,
+   where the expr of each entry is a metavariable. -/ 
+meta def mk_meta_vector₂ (αx : expr) : nat → nat → tactic expr 
+| 0     n := to_expr ``(@vector.nil (vector %%αx %%`(n)))
+| (m+1) n :=  
+  do v₁x ← mk_meta_vector αx n,
+     v₂x ← mk_meta_vector₂ m n,
+     to_expr ``(@vector.cons (vector %%αx %%`(n)) %%`(m) %%v₁x %%v₂x)
+
+def vector₂ (α : Type) (m n : nat) : Type := vector (vector α n) m
