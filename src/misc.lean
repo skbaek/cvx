@@ -1,5 +1,10 @@
 import data.nat.basic
 
+universe u
+
+def update (α : Type u) (k : nat) (a : α) (f : nat → α) : nat → α := 
+λ x : nat, if x = k then a else f x
+
 lemma forall_lt_zero (p : nat → Prop) : ∀ x < 0, p x := 
 λ x h, by cases h
 
@@ -26,3 +31,7 @@ instance forall_lt.decidable (p : nat → Prop) [decidable_pred p] :
 | 0     := decidable.is_true (forall_lt_zero p)
 | (k+1) := decidable_of_iff' _ (forall_lt_succ_iff p k)
 
+open tactic
+
+meta def get_default (αx : expr) : tactic expr := 
+to_expr ``(@inhabited.default %%αx _)
