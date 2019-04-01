@@ -189,7 +189,6 @@ have (ip_norm (u + v))^2 ≤ (ip_norm u + ip_norm v)^2, from
                          mul_comm (ip_norm v) (ip_norm u)],
 le_of_sqr_le_sqr (ip_norm_nonneg _) (add_nonneg (ip_norm_nonneg _) (ip_norm_nonneg _)) this
  
-@[priority 0]
 instance has_norm [real_inner_product_space V] :
 has_norm V := { norm := ip_norm }.
 

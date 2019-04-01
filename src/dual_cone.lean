@@ -1,16 +1,16 @@
 import .cone .rowvec
 
-section vec_dual_cone
+section dual_cone
 
 variables {k m n : nat} (a : ℝ) (x y z : colvec ℝ n) (A : set (colvec ℝ n))
 
 -- TODO: move?
 local infix ` ⬝ ` : 70 := matrix.mul
 
-def vec_dual_cone (A : set (colvec ℝ n)) : set (rowvec ℝ n) := 
+def dual_cone (A : set (colvec ℝ n)) : set (rowvec ℝ n) := 
 { y | ∀ x ∈ A, (0 : ℝ) ≤ y ⬝ x }
 
-lemma cone_vec_dual_cone : cone (vec_dual_cone A) :=
+lemma cone_dual_cone : cone (dual_cone A) :=
 begin
   intros x ha c hc z hz,
   rw matrix.smul_mul,
@@ -33,10 +33,10 @@ end
 postfix `ᵀ` : 1500 := set.image matrix.transpose
 
 lemma second_order_cone_self_dual : 
-  vec_dual_cone (second_order_cone n) = (second_order_cone n)ᵀ :=
+  dual_cone (second_order_cone n) = (second_order_cone n)ᵀ :=
 begin
-  have h_ltr: vec_dual_cone (second_order_cone n) ⊆ (second_order_cone n)ᵀ,
-  { assume (y : rowvec ℝ (n + 1)) (hy : y ∈ vec_dual_cone (second_order_cone n)),
+  have h_ltr: dual_cone (second_order_cone n) ⊆ (second_order_cone n)ᵀ,
+  { assume (y : rowvec ℝ (n + 1)) (hy : y ∈ dual_cone (second_order_cone n)),
     by_cases h_cases : y.butlast = 0,
     { have h : (0:ℝ) ≤ y ⬝ (colvec.snoc 0 1),
       { apply hy (colvec.snoc 0 1),
@@ -91,7 +91,7 @@ begin
       } 
     }
   },
-  have h_rtl: (second_order_cone n)ᵀ ⊆ vec_dual_cone (second_order_cone n),
+  have h_rtl: (second_order_cone n)ᵀ ⊆ dual_cone (second_order_cone n),
   begin
     assume (y : rowvec ℝ (n + 1)),
     assume (hy : y ∈ (second_order_cone n)ᵀ),
@@ -120,8 +120,8 @@ begin
       simp [has_inner.inner, inner, matrix.transpose_transpose],
     }
   end,
-  show vec_dual_cone (second_order_cone n) = (second_order_cone n)ᵀ,
+  show dual_cone (second_order_cone n) = (second_order_cone n)ᵀ,
     from set.subset.antisymm h_ltr h_rtl
 end
 
-end vec_dual_cone
+end dual_cone

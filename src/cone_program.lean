@@ -1,4 +1,4 @@
-import .colvec .vec_dual_cone data.real.basic 
+import .colvec .dual_cone data.real.basic 
 
 variables {k m n : nat}
 
@@ -40,7 +40,7 @@ def primal.to_dual (P : primal m n) : dual m n :=
 
 lemma cone_duality
 (P : primal m n) (x : colvec ℝ n) (y : rowvec ℝ m)
-(hx : P.feasible K x) (hy : P.to_dual.feasible (vec_dual_cone K) y) : 
+(hx : P.feasible K x) (hy : P.to_dual.feasible (dual_cone K) y) : 
 (y ⬝ P.to_dual.obf : ℝ) ≤ P.obf ⬝ x :=
 begin
   let c := P.obf,
