@@ -88,12 +88,31 @@ begin
   ring
 end
 
+lemma transpose_add [has_add α] (M : matrix m n α) (N : matrix m n α) : 
+  (M + N)ᵀ = Mᵀ + Nᵀ  := 
+begin
+  ext i j, 
+  dsimp [transpose], 
+  refl
+end
+
+lemma transpose_smul [has_mul α] (a : α) (M : matrix m n α) : 
+  (a • M)ᵀ = a • Mᵀ  := 
+by ext i j; refl
+
 @[simp] lemma transpose_neg [comm_ring α] (M : matrix m n α) : 
   (- M)ᵀ = - Mᵀ  := 
 by ext i j; refl
 
 @[simp] lemma transpose_zero [has_zero α] : (0 : matrix m n α)ᵀ = 0 := 
 by ext i j; refl
+
+lemma eq_iff_transpose_eq (M : matrix m n α) (N : matrix m n α) : M = N ↔ Mᵀ = Nᵀ := 
+begin 
+  split,
+  { intro h, ext i j, rw h },
+  { intro h, ext i j, rw [←transpose_transpose M,h,transpose_transpose] },
+end
 
 end matrix
 
