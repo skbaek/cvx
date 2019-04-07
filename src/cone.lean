@@ -101,3 +101,24 @@ begin
 end
 
 end vector_space
+
+section dual_cone
+
+def dual_cone {α : Type*} [has_inner ℝ α] (A : set α) : set α := 
+{ y | ∀ x ∈ A, 0 ≤ ⟪ x, y ⟫ }
+
+open real_inner_product_space
+
+variables {α : Type*}
+  [real_inner_product_space α] 
+  (A : set α) (B : set α)
+
+lemma cone_dual_cone : cone (dual_cone A) :=
+begin
+  intros x ha c hc z hz,
+  rw inner_smul_right,
+  apply zero_le_mul hc,
+  exact ha _ hz
+end
+
+end dual_cone

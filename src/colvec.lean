@@ -5,6 +5,66 @@ import tactic.transfer
 import logic.relator
 import .inner_product_space
 
+
+-- TODO: move
+namespace fin
+
+open finset
+
+lemma sum_image_succ_univ {α : Type} [comm_ring α] {n : nat} (f : fin (n + 1) → α) : 
+  sum (image fin.succ univ) (λ x, f x) = sum univ (λ i, f (fin.succ i)) :=
+begin
+  rw finset.sum_image,
+  intros _ _ _ _ h,
+  apply (eq_iff_veq _ _).2,
+  apply (eq_iff_veq _ _).1 (succ.inj h),
+end
+
+lemma image_succ_univ (n : nat) : 
+  insert (⟨0, nat.zero_lt_succ n⟩ : fin (n + 1)) (image fin.succ (univ : finset (fin n)))
+    = (univ : finset (fin (n + 1))) :=
+begin
+  apply subset.antisymm,
+  { intros k hk,
+    rw mem_insert at hk,
+    apply or.elim hk (λ _, mem_univ) (λ _, mem_univ),
+  },
+  { intros k _,
+    by_cases h_cases: k = ⟨0, nat.zero_lt_succ n⟩,
+    { rw h_cases,
+      apply mem_insert_self _ },
+    { apply mem_insert_of_mem,
+      rw mem_image,
+      use fin.pred k h_cases,
+      use mem_univ _,
+      apply succ_pred } }
+end
+
+lemma not_mem_image_succ_univ (n : nat) :  
+  ¬ (⟨0, nat.zero_lt_succ n⟩ : fin (n + 1)) ∈ image fin.succ (univ : finset (fin n)) :=
+begin
+  intros h,
+  rw mem_image at h,
+  apply exists.elim h,
+  intros k hk,
+  apply exists.elim hk,
+  intros _ hk',
+  rw eq_iff_veq at hk',
+  simp at hk',
+  exact nat.succ_ne_zero _ hk'
+end
+
+lemma sum_succ {α : Type} [comm_ring α] {n : nat} (f : fin (n + 1) → α) : 
+  finset.sum finset.univ (λ x : fin (n + 1), f x) = f ⟨0, nat.zero_lt_succ n⟩ + finset.sum finset.univ (λ x : fin n, f x.succ) :=
+begin
+  rw [← sum_image_succ_univ],
+  rw [← image_succ_univ n],
+  rw sum_insert,
+  apply not_mem_image_succ_univ n
+end
+
+end fin
+
 section transport 
 
 open tactic
@@ -92,8 +152,8 @@ section inner
 
 variables {α : Type} [has_mul α] [add_comm_monoid α] {n : Type} [fintype n]
 
-def colvec.inner (v w : colvec n α) : α := (matrix.mul wᵀ v) 0 0
-def rowvec.inner (v w : rowvec n α) : α := (matrix.mul w vᵀ) 0 0
+def colvec.inner (v w : colvec n α) : α := (matrix.mul vᵀ w) 0 0
+def rowvec.inner (v w : rowvec n α) : α := (matrix.mul v wᵀ) 0 0
 
 end inner
 
@@ -110,7 +170,7 @@ lemma colvec.rel_eq_inner {α : Type} [comm_ring α]:
 begin 
   intros x xt hx y yt hy, 
   unfold colvec.inner rowvec.inner,
-  rw [hx,←hy,matrix.transpose_transpose]
+  rw [hy,←hx,matrix.transpose_transpose]
 end
 
 lemma colvec.rel_transpose_add {α : Type} [comm_ring α]: 
@@ -211,13 +271,13 @@ lemma rowvec.inner_comm : ∀ (x y : rowvec n α), x.inner y = y.inner x :=
 begin colvec.transfer, exact colvec.inner_comm end
 
 lemma colvec.inner_add_left : (x + y).inner z = x.inner z + y.inner z := 
-by simp [colvec.inner, colvec, mat, matrix.mul_add']
+by simp [colvec.inner, colvec, mat, matrix.transpose_add, matrix.add_mul']
 
 lemma rowvec.inner_add_left : ∀ (x y z : rowvec n α), (x + y).inner z = x.inner z + y.inner z :=
 begin colvec.transfer, exact colvec.inner_add_left end
 
 lemma colvec.inner_smul_left : (a • x).inner y = a * x.inner y := 
-by simp [colvec.inner, colvec, mat, matrix.mul_smul]; refl
+by simp [colvec.inner, colvec, mat, matrix.smul_mul, matrix.transpose_smul]; refl
 
 lemma rowvec.inner_smul_left (a : α) : ∀ (x y : rowvec n α), (a • x).inner y = a * x.inner y := 
 begin colvec.transfer, exact colvec.inner_smul_left a end
@@ -226,7 +286,7 @@ end inner
 
 section inner
 
-variables {α : Type} [linear_ordered_comm_ring α] {n : Type} [fintype n] [decidable_eq n] (a : α) (x y z : colvec n α)
+variables {α : Type} [linear_ordered_comm_ring α] {m : Type} [fintype m] {n : Type} [fintype n] [decidable_eq n] (a : α) (x y z : colvec n α)
 
 lemma colvec.inner_self_nonneg : 0 ≤ x.inner x :=
 begin
@@ -274,6 +334,27 @@ noncomputable instance rowvec.real_inner_product_space : real_inner_product_spac
   inner_self_nonneg := rowvec.inner_self_nonneg,
   eq_zero_of_inner_self_eq_zero := λ x h, (rowvec.eq_zero_of_inner_self_eq_zero x h.symm).symm
 }
+
+lemma colvec.inner_eq_sum_nth : 
+  x.inner y = finset.univ.sum (λi, x.nth i * y.nth i) :=
+by unfold colvec.inner matrix.mul colvec.nth; refl
+
+lemma rowvec.inner_eq_sum_nth (x : rowvec n α) (y : rowvec n α) : 
+  x.inner y = finset.univ.sum (λi, x.nth i * y.nth i) :=
+by unfold rowvec.inner matrix.mul colvec.nth; refl
+
+attribute [to_rowvec rowvec.inner_eq_sum_nth] colvec.inner_eq_sum_nth
+
+
+--TODO @[to_rowvec rowvec.inner_mul]
+lemma colvec.inner_mul (A : matrix m n ℝ) (x : colvec n ℝ) (y : colvec m ℝ) : 
+  ⟪ x, Aᵀ.mul y ⟫ = ⟪ y, A.mul x ⟫ :=
+begin
+  unfold has_inner.inner colvec.inner,
+  rw [←one_by_one_matrix.transpose ℝ (matrix.mul xᵀ (matrix.mul Aᵀ y)),
+      matrix.transpose_mul, matrix.transpose_mul, ←matrix.mul_assoc, 
+      matrix.transpose_transpose, matrix.transpose_transpose]
+end
 
 end inner
 
@@ -326,6 +407,25 @@ begin
       from (fin.eq_iff_veq _ _).2 h_cases,
     simp [hi] },
   { simp [h_cases, nat.succ_pred_eq_of_pos (nat.pos_of_ne_zero h_cases)] },
+end
+
+
+--TODO: @[to_rowvec rowvec.last]
+lemma colvec.mul_head_add_mul_tail {α : Type} [comm_ring α] (x y : colvec (fin (n+1)) ℝ) :
+  x.head * y.head + ⟪ x.tail, y.tail ⟫ = ⟪ x, y ⟫  := 
+begin
+  unfold has_inner.inner,
+  simp only [colvec.inner_eq_sum_nth],
+  unfold colvec.head colvec.tail,
+  rw fin.sum_succ (λ j : fin (n+1), x.nth j * y.nth j),
+  congr,
+  simp,
+  funext,
+  congr,
+  apply (fin.eq_iff_veq _ _).2,
+  simp,
+  apply (fin.eq_iff_veq _ _).2,
+  simp,
 end
 
 @[to_rowvec rowvec.last]

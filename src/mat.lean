@@ -96,6 +96,7 @@ begin
   refl
 end
 
+-- TODO: add to mathlib
 lemma transpose_smul [has_mul α] (a : α) (M : matrix m n α) : 
   (a • M)ᵀ = a • Mᵀ  := 
 by ext i j; refl
@@ -107,6 +108,7 @@ by ext i j; refl
 @[simp] lemma transpose_zero [has_zero α] : (0 : matrix m n α)ᵀ = 0 := 
 by ext i j; refl
 
+-- TODO: add to mathlib
 lemma eq_iff_transpose_eq (M : matrix m n α) (N : matrix m n α) : M = N ↔ Mᵀ = Nᵀ := 
 begin 
   split,
