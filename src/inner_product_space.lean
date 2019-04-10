@@ -1,3 +1,4 @@
+-- based on Jeremy's Lean2 formalization
 
 import algebra.module
 import analysis.normed_space.basic
