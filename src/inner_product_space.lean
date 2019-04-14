@@ -24,6 +24,8 @@ class has_inner (V : Type*) (W : Type*):=
 
 notation `⟪` v `, ` w `⟫` := has_inner.inner ℝ v w
 
+
+--TODO: try to move add_comm_group in front and use `attribute [-instance] nat.cast_coe`
 class real_inner_product_space (V : Type*) extends has_inner ℝ V, add_comm_group V, vector_space ℝ V :=
 (inner_add_left : ∀ u v w, inner (u + v) w = inner u w + inner v w)
 (inner_smul_left : ∀ r v w, inner (r • v) w = r * inner v w)
