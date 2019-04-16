@@ -191,7 +191,7 @@ begin
   refine le_antisymm (map_le_iff_le_comap.2 $
     le_trans (supported_mono $ set.subset_preimage_image _ _)
        (supported_comap_map _ _)) _,
-  intros l hl, haveI : inhabited β := ⟨0⟩,
+  intros l hl,
   refine ⟨(lc.map α v' v (inv_fun_on f s) : lc ι' α β' v' →ₗ lc ι α β v) l, λ x hx, _, _⟩,
   { rcases finset.mem_image.1 (finsupp.map_domain_support hx) with ⟨c, hc, rfl⟩,
     exact inv_fun_on_mem (by simpa using hl hc) },

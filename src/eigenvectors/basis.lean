@@ -264,7 +264,7 @@ end
 end indexed
 
 section
-variables [inhabited β] {s t : set β} {f : β →ₗ[α] γ} 
+variables {s t : set β} {f : β →ₗ[α] γ} 
 variables (hf_inj : ∀ x y ∈ t, f x = f y → x = y)
 variables (ht : linear_independent α γ id (f '' t))
 include hf_inj ht
@@ -274,6 +274,7 @@ lemma linear_independent.supported_disjoint_ker :
   disjoint (lc.supported α β id t) (ker (f.comp (lc.total β α β id))) :=
 begin
   refine le_trans (le_inf inf_le_left _) (@lc.map_disjoint_ker β γ α β γ id id _ _ _ _ _ f t hf_inj),
+  haveI : inhabited β := ⟨0⟩,
   rw [linear_independent, disjoint_iff, ← @lc.map_supported β γ α β γ id id _ _ _ _ _ _ f] at ht,
   rw [← @lc.map_total β γ α β γ id id _ _ _ _ _ f f (by simp), le_ker_iff_map],
   refine eq_bot_mono (le_inf (map_mono inf_le_left) _) ht,
@@ -290,31 +291,31 @@ by rw [← set.image_id t, @span_eq_map_lc, disjoint_iff, map_inf_eq_map_inf_com
 end
 
 lemma linear_independent.inj_span_iff_inj 
-  [inhabited β] {t : set β} {f : β →ₗ[α] γ} 
+  {t : set β} {f : β →ₗ[α] γ} 
   (ht : linear_independent α γ id (f '' t)) :
   disjoint (span α t) f.ker ↔ (∀ x y ∈ t, f x = f y → x = y) :=
 ⟨linear_map.inj_of_disjoint_ker subset_span, λ h, ht.disjoint_ker h⟩
 
 open linear_map
-lemma linear_independent.image [inhabited β] {s : set β} {f : β →ₗ γ} (hs : linear_independent α β id s)
+lemma linear_independent.image {s : set β} {f : β →ₗ γ} (hs : linear_independent α β id s)
   (hf_inj : disjoint (span α s) f.ker) : linear_independent α γ id (f '' s) :=
 begin 
   rw [disjoint, ← set.image_id s, span_eq_map_lc, map_inf_eq_map_inf_comap,
     map_le_iff_le_comap, comap_bot] at hf_inj,
+  haveI : inhabited β := ⟨0⟩,
   rw [linear_independent, disjoint, ← lc.map_supported f, map_inf_eq_map_inf_comap,
     map_le_iff_le_comap, ← ker_comp, lc.map_total, ker_comp],
   { exact le_trans (le_inf inf_le_left hf_inj) (le_trans hs bot_le) },
   { simp }
 end
 
-lemma linear_map.linear_independent_image_iff [inhabited β] {s : set β} {f : β →ₗ γ}
+lemma linear_map.linear_independent_image_iff {s : set β} {f : β →ₗ γ}
   (hf_inj : disjoint (span α s) f.ker) :
   linear_independent α γ id (f '' s) ↔ linear_independent α β id s :=
 ⟨λ hs, hs.of_image (linear_map.inj_of_disjoint_ker subset_span hf_inj),
  λ hs, hs.image hf_inj⟩
 
-lemma linear_independent_inl_union_inr 
-  [inhabited β] [inhabited γ] {s : set β} {t : set γ}
+lemma linear_independent_inl_union_inr {s : set β} {t : set γ}
   (hs : linear_independent α β id s) (ht : linear_independent α γ id t) :
   linear_independent α (β × γ) id (inl α β γ '' s ∪ inr α β γ '' t) :=
 linear_independent_union (hs.image $ by simp) (ht.image $ by simp) $
@@ -332,26 +333,26 @@ variables {s t : set β} (hs : is_basis α s)
 lemma is_basis.mem_span (hs : is_basis α s) : ∀ x, x ∈ span α s := eq_top_iff'.1 hs.2
 
 def is_basis.repr : β →ₗ lc β α β id :=
-(hs.1.repr).comp (linear_map.id.cod_restrict _ hs.mem_span)
+(hs.1.repr).comp (linear_map.id.cod_restrict _ (by rw [set.image_id]; exact hs.mem_span))
 
-lemma is_basis.total_repr (x) : lc.total α β (hs.repr x) = x :=
+lemma is_basis.total_repr (x) : lc.total β α β id (hs.repr x) = x :=
 hs.1.total_repr ⟨x, _⟩
 
-lemma is_basis.total_comp_repr : (lc.total α β).comp hs.repr = linear_map.id :=
+lemma is_basis.total_comp_repr : (lc.total β α β id).comp hs.repr = linear_map.id :=
 linear_map.ext hs.total_repr
 
 lemma is_basis.repr_ker : hs.repr.ker = ⊥ :=
 linear_map.ker_eq_bot.2 $ injective_of_left_inverse hs.total_repr
 
-lemma is_basis.repr_range : hs.repr.range = lc.supported α s :=
+lemma is_basis.repr_range : hs.repr.range = lc.supported α β id s :=
 by  rw [is_basis.repr, linear_map.range, submodule.map_comp,
   linear_map.map_cod_restrict, submodule.map_id, comap_top, map_top, hs.1.repr_range]
 
-lemma is_basis.repr_supported (x) : hs.repr x ∈ lc.supported α s :=
+lemma is_basis.repr_supported (x) : hs.repr x ∈ lc.supported α β id s :=
 hs.1.repr_supported ⟨x, _⟩
 
-lemma is_basis.repr_total (x) (hx : x ∈ lc.supported α s) :
-  hs.repr (lc.total α β x) = x :=
+lemma is_basis.repr_total (x) (hx : x ∈ lc.supported α β id s) :
+  hs.repr (lc.total β α β id x) = x :=
 begin
   rw [← hs.repr_range, linear_map.mem_range] at hx,
   cases hx with v hv,
@@ -359,11 +360,11 @@ begin
 end
 
 lemma is_basis.repr_eq_single {x} : x ∈ s → hs.repr x = finsupp.single x 1 :=
-hs.1.repr_eq_single ⟨x, _⟩
+λ hxs, hs.1.repr_eq_single x ⟨x, _⟩ hxs (by simp)
 
 /-- Construct a linear map given the value at the basis. -/
-def is_basis.constr (f : β → γ) : β →ₗ γ :=
-(lc.total α γ).comp $ (lc.map α f).comp hs.repr
+def is_basis.constr (f : β → γ) : β →ₗ[α] γ :=
+(lc.total γ α γ id).comp $ (lc.map α id id f).comp hs.repr
 
 theorem is_basis.constr_apply (f : β → γ) (x : β) :
   (hs.constr f : β → γ) x = (hs.repr x).sum (λb a, a • f b) :=
@@ -371,7 +372,7 @@ by dsimp [is_basis.constr];
    rw [lc.total_apply, finsupp.sum_map_domain_index]; simp [add_smul]
 
 lemma is_basis.ext {f g : β →ₗ[α] γ} (hs : is_basis α s) (h : ∀x∈s, f x = g x) : f = g :=
-linear_map.ext $ λ x, linear_eq_on h (hs.mem_span x)
+linear_map.ext $ λ x, linear_eq_on s h (hs.mem_span x)
 
 lemma constr_congr {f g : β → γ} {x : β} (hs : is_basis α s) (h : ∀x∈s, f x = g x) :
   hs.constr f = hs.constr g :=
@@ -410,12 +411,14 @@ lemma constr_smul {α β γ} [comm_ring α]
   hs.constr (λb, a • f b) = a • hs.constr f :=
 constr_eq hs $ by simp [constr_basis hs] {contextual := tt}
 
-lemma constr_range (hs : is_basis α s) {f : β → γ} : (hs.constr f).range = span α (f '' s) :=
-by rw [is_basis.constr, linear_map.range_comp, linear_map.range_comp,
-       is_basis.repr_range, lc.map_supported, span_eq_map_lc]
+lemma constr_range (hs : is_basis α s) {f : β → γ} : 
+  (hs.constr f).range = span α (f '' s) :=
+by haveI : inhabited β := ⟨0⟩; 
+  rw [is_basis.constr, linear_map.range_comp, linear_map.range_comp, is_basis.repr_range, 
+    lc.map_supported, ←set.image_id (f '' s), span_eq_map_lc, set.image_id (f '' s)]
 
-def module_equiv_lc (hs : is_basis α s) : β ≃ₗ lc.supported α s :=
-(hs.1.total_equiv.trans (linear_equiv.of_top _ hs.2)).symm
+def module_equiv_lc (hs : is_basis α s) : β ≃ₗ lc.supported α β id s :=
+(hs.1.total_equiv.trans (linear_equiv.of_top _ (by rw set.image_id; exact hs.2))).symm
 
 def equiv_of_is_basis {s : set β} {t : set γ} {f : β → γ} {g : γ → β}
   (hs : is_basis α s) (ht : is_basis α t) (hf : ∀b∈s, f b ∈ t) (hg : ∀c∈t, g c ∈ s)
@@ -449,11 +452,11 @@ show is_basis α ((f : β →ₗ[α] γ) '' s), from
 ⟨hs.1.image $ by simp, by rw [span_image, hs.2, map_top, f.range]⟩
 
 lemma is_basis_injective {s : set γ} {f : β →ₗ[α] γ}
-  (hs : linear_independent α s) (h : function.injective f) (hfs : span α s = f.range) :
+  (hs : linear_independent α γ id s) (h : function.injective f) (hfs : span α s = f.range) :
   is_basis α (f ⁻¹' s) :=
 have s_eq : f '' (f ⁻¹' s) = s :=
   image_preimage_eq_of_subset $ by rw [← linear_map.range_coe, ← hfs]; exact subset_span,
-have linear_independent α (f '' (f ⁻¹' s)), from hs.mono (image_preimage_subset _ _),
+have linear_independent α γ id (f '' (f ⁻¹' s)), from hs.mono (image_preimage_subset _ _),
 begin
   split,
   exact (this.of_image $ assume a ha b hb eq, h eq),
@@ -462,7 +465,7 @@ begin
   exact le_refl _
 end
 
-lemma is_basis_span {s : set β} (hs : linear_independent α s) : is_basis α ((span α s).subtype ⁻¹' s) :=
+lemma is_basis_span {s : set β} (hs : linear_independent α β id s) : is_basis α ((span α s).subtype ⁻¹' s) :=
 is_basis_injective hs subtype.val_injective (range_subtype _).symm
 
 lemma is_basis_empty (h : ∀x:β, x = 0) : is_basis α (∅ : set β) :=
@@ -481,7 +484,7 @@ include α
 open submodule
 
 /- TODO: some of the following proofs can generalized with a zero_ne_one predicate type class
-   (instead of a data containing type classs) -/
+   (instead of a data containing type class) -/
 
 set_option class.instance_max_depth 36
 
@@ -496,13 +499,13 @@ end
 
 set_option class.instance_max_depth 32
 
-lemma linear_independent_iff_not_mem_span : linear_independent α s ↔ (∀x∈s, x ∉ span α (s \ {x})) :=
+lemma linear_independent_iff_not_mem_span : linear_independent α β id s ↔ (∀x∈s, x ∉ span α (s \ {x})) :=
 linear_independent_iff_not_smul_mem_span.trans
-⟨λ H x xs hx, one_ne_zero (H x xs 1 $ by simpa),
+⟨λ H x xs hx, one_ne_zero (H x xs 1 $ by rw set.image_id; simpa),
  λ H x xs a hx, classical.by_contradiction $ λ a0,
-   H x xs ((smul_mem_iff _ a0).1 hx)⟩
+   H x xs (by rw [← set.image_id (s \ {x})]; exact (smul_mem_iff _ a0).1 hx)⟩
 
-lemma linear_independent_singleton {x : β} (hx : x ≠ 0) : linear_independent α ({x} : set β) :=
+lemma linear_independent_singleton {x : β} (hx : x ≠ 0) : linear_independent α β id ({x} : set β) :=
 linear_independent_iff_not_mem_span.mpr $ by simp [hx] {contextual := tt}
 
 lemma disjoint_span_singleton {p : submodule α β} {x : β} (x0 : x ≠ 0) :
@@ -515,19 +518,20 @@ begin
   exact xp.elim ((smul_mem_iff p a0).1 yp),
 end⟩
 
-lemma linear_independent.insert (hs : linear_independent α s) (hx : x ∉ span α s) :
-  linear_independent α (insert x s) :=
+lemma linear_independent.insert (hs : linear_independent α β id s) (hx : x ∉ span α s) :
+  linear_independent α β id (insert x s) :=
 begin
   rw ← union_singleton,
   have x0 : x ≠ 0 := mt (by rintro rfl; apply zero_mem _) hx,
-  exact linear_independent_union hs (linear_independent_singleton x0)
-    ((disjoint_span_singleton x0).2 hx)
+  apply linear_independent_union hs (linear_independent_singleton x0),
+  rw [set.image_id, set.image_id, disjoint_span_singleton x0],
+  exact hx
 end
 
-lemma exists_linear_independent (hs : linear_independent α s) (hst : s ⊆ t) :
-  ∃b⊆t, s ⊆ b ∧ t ⊆ span α b ∧ linear_independent α b :=
+lemma exists_linear_independent (hs : linear_independent α β id s) (hst : s ⊆ t) :
+  ∃b⊆t, s ⊆ b ∧ t ⊆ span α b ∧ linear_independent α β id b :=
 begin
-  rcases zorn.zorn_subset₀ {b | b ⊆ t ∧ linear_independent α b} _ _
+  rcases zorn.zorn_subset₀ {b | b ⊆ t ∧ linear_independent α β id b} _ _
     ⟨hst, hs⟩ with ⟨b, ⟨bt, bi⟩, sb, h⟩,
   { refine ⟨b, bt, sb, λ x xt, _, bi⟩,
     by_contra hn,
@@ -540,7 +544,7 @@ begin
     { exact subset_sUnion_of_mem } }
 end
 
-lemma exists_subset_is_basis (hs : linear_independent α s) : ∃b, s ⊆ b ∧ is_basis α b :=
+lemma exists_subset_is_basis (hs : linear_independent α β id s) : ∃b, s ⊆ b ∧ is_basis α b :=
 let ⟨b, hb₀, hx, hb₂, hb₃⟩ := exists_linear_independent hs (@subset_univ _ _) in
 ⟨b, hx, hb₃, eq_top_iff.2 hb₂⟩
 
@@ -551,13 +555,15 @@ variables {α β}
 
 -- TODO(Mario): rewrite?
 lemma exists_of_linear_independent_of_finite_span {t : finset β}
-  (hs : linear_independent α s) (hst : s ⊆ (span α ↑t : submodule α β)) :
+  (hs : linear_independent α β id s) (hst : s ⊆ (span α ↑t : submodule α β)) :
   ∃t':finset β, ↑t' ⊆ s ∪ ↑t ∧ s ⊆ ↑t' ∧ t'.card = t.card :=
 have ∀t, ∀(s' : finset β), ↑s' ⊆ s → s ∩ ↑t = ∅ → s ⊆ (span α ↑(s' ∪ t) : submodule α β) →
   ∃t':finset β, ↑t' ⊆ s ∪ ↑t ∧ s ⊆ ↑t' ∧ t'.card = (s' ∪ t).card :=
 assume t, finset.induction_on t
   (assume s' hs' _ hss',
-    have s = ↑s', from eq_of_linear_independent_of_span (@one_ne_zero α _) hs hs' $ by simpa using hss',
+    have s = ↑s', 
+      from eq_of_linear_independent_of_span (@one_ne_zero α _) hs hs' $ 
+          by rw [set.image_id, set.image_id]; simpa using hss',
     ⟨s', by simp [this]⟩)
   (assume b₁ t hb₁t ih s' hs' hst hss',
     have hb₁s : b₁ ∉ s,
@@ -599,7 +605,7 @@ let ⟨u, h₁, h₂, h⟩ := this (t.filter (λx, x ∉ s)) (t.filter (λx, x �
   h₂, by rwa [eq] at h⟩
 
 lemma exists_finite_card_le_of_finite_of_linear_independent_of_span
-  (ht : finite t) (hs : linear_independent α s) (hst : s ⊆ span α t) :
+  (ht : finite t) (hs : linear_independent α β id s) (hst : s ⊆ span α t) :
   ∃h : finite s, h.to_finset.card ≤ ht.to_finset.card :=
 have s ⊆ (span α ↑(ht.to_finset) : submodule α β), by simp; assumption,
 let ⟨u, hust, hsu, eq⟩ := exists_of_linear_independent_of_finite_span hs this in
@@ -610,7 +616,7 @@ lemma exists_left_inverse_linear_map_of_injective {f : β →ₗ[α] γ}
   (hf_inj : f.ker = ⊥) : ∃g:γ →ₗ β, g.comp f = linear_map.id :=
 begin
   rcases exists_is_basis α β with ⟨B, hB⟩,
-  have : linear_independent α (f '' B) :=
+  have : linear_independent α γ id (f '' B) :=
     hB.1.image (by simp [hf_inj]),
   rcases exists_subset_is_basis this with ⟨C, BC, hC⟩,
   haveI : inhabited β := ⟨0⟩,
@@ -653,7 +659,7 @@ open fintype
 variables (b : set β) (h : is_basis α b)
 
 noncomputable def equiv_fun_basis [fintype b] : β ≃ (b → α) :=
-calc β ≃ lc.supported α b : (module_equiv_lc h).to_equiv
+calc β ≃ lc.supported α β id b : (module_equiv_lc h).to_equiv
    ... ≃ (b →₀ α)         : finsupp.restrict_support_equiv b
    ... ≃ (b → α)          : finsupp.equiv_fun_on_fintype
 
@@ -670,24 +676,25 @@ namespace pi
 open set linear_map
 
 section module
-variables {ι : Type*} {φ : ι → Type*}
+variables {φ : ι → Type*}
 variables [ring α] [∀i, add_comm_group (φ i)] [∀i, module α (φ i)] [fintype ι] [decidable_eq ι]
 
-lemma linear_independent_std_basis (s : Πi, set (φ i)) (hs : ∀i, linear_independent α (s i)) :
-  linear_independent α (⋃i, std_basis α φ i '' s i) :=
+lemma linear_independent_std_basis (s : Πi, set (φ i)) (hs : ∀i, linear_independent α _ id (s i)) :
+  linear_independent α _ id (⋃i, std_basis α φ i '' s i) :=
 begin
   refine linear_independent_Union_finite _ _,
   { assume i,
     refine (linear_independent_image_iff _).2 (hs i),
     simp only [ker_std_basis, disjoint_bot_right] },
   { assume i J _ hiJ,
+    simp only [set.image_id],
     simp [(set.Union.equations._eqn_1 _).symm, submodule.span_image, submodule.span_Union],
     have h₁ : map (std_basis α φ i) (span α (s i)) ≤ (⨆j∈({i} : set ι), range (std_basis α φ j)),
     { exact (le_supr_of_le i $ le_supr_of_le (set.mem_singleton _) $ map_mono $ le_top) },
     have h₂ : (⨆j∈J, map (std_basis α φ j) (span α (s j))) ≤ (⨆j∈J, range (std_basis α φ j)),
     { exact supr_le_supr (assume i, supr_le_supr $ assume hi, map_mono $ le_top) },
     exact disjoint_mono h₁ h₂
-      (disjoint_std_basis_std_basis _ _ _ _ $ set.disjoint_singleton_left.2 hiJ) }
+        (disjoint_std_basis_std_basis _ _ _ _ $ set.disjoint_singleton_left.2 hiJ) }
 end
 
 lemma is_basis_std_basis [fintype ι] (s : Πi, set (φ i)) (hs : ∀i, is_basis α (s i)) :
