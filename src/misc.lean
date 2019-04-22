@@ -2,6 +2,11 @@ import data.nat.basic
 
 universe u
 
+def string.drop_chars (c : char) (s : string) : string := 
+⟨s.data.drop_while (λ x, x = c)⟩ 
+
+def string.reverse (s : string) : string := ⟨s.data.reverse⟩ 
+
 def update (α : Type u) (k : nat) (a : α) (f : nat → α) : nat → α := 
 λ x : nat, if x = k then a else f x
 

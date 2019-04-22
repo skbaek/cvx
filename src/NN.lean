@@ -89,6 +89,25 @@ def NN.repr_aux [has_repr α] (k : nat) (A : NN α) : nat → nat → string
 def NN.repr (m n : nat) [has_repr α] (A : NN α) : string := 
 NN.repr_aux (NN.cell_size A m n) A m n  
 
+def N.le [has_le α] (k : nat) (v w : N α) : Prop :=
+∀ x < k, v x ≤ w x 
+
+instance N.le.decidable [has_le α] [decidable_rel ((≤) : α → α → Prop)] 
+  (k : nat) (v w : N α) : decidable (N.le k v w) :=
+forall_lt.decidable _ _ 
+   
+def N.zero (α : Type) [has_zero α] : N α := λ _, 0
+
+def N.sum [has_zero α] [has_add α] : ∀ k : nat, ∀ v : N α, α  
+| 0       _ := 0
+| (k + 1) v := v k + v.sum k 
+
+def dot_prod [has_zero α] [has_add α] [has_mul α] (k : nat) (v w : N α) : α := 
+N.sum k (λ m, v m * w m)
+
+def mul_vec [has_zero α] [has_add α] [has_mul α] (k : nat) (A : NN α) (x : N α) : N α := 
+λ m, dot_prod k (A m) x
+
 
 /- norm -/
 
