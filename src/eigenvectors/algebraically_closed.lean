@@ -28,16 +28,6 @@ set_option class.instance_max_depth 41
 universes u v w
 
 
--- TODO: move to dimension.lean
-lemma linear_independent_le_dim {α : Type u} {β : Type v} {ι : Type w}
-  [discrete_field α] [decidable_eq β] [add_comm_group β] [vector_space α β] [decidable_eq ι]
-  {v : ι → β} (hv : linear_independent α v): cardinal.lift.{w v} (cardinal.mk ι) ≤ cardinal.lift.{v w} (dim α β) :=
-calc
-  cardinal.lift.{w v} (cardinal.mk ι) = cardinal.lift.{v w} (cardinal.mk (set.range v)) : 
-     (cardinal.mk_range_eq_of_inj (linear_independent.injective (field.zero_ne_one α) hv)).symm
-  ... = cardinal.lift.{v w} (dim α (span α (set.range v))) : by rw (dim_span hv).symm
-  ... ≤ cardinal.lift.{v w} (dim α β) : cardinal.lift_le.2 (dim_submodule_le (span α _))
-
 
 
 
