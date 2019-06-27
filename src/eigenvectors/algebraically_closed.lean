@@ -1,33 +1,97 @@
 
-import analysis.complex.polynomial
 import ring_theory.principal_ideal_domain
 import linear_algebra.dimension
+import analysis.complex.polynomial
+
+/-
+#check linear_map.to_fun
+
+example {α : Type*} [discrete_field α] {β : Type*} [decidable_eq β] [add_comm_group β] [vector_space α β]  
+(w : ℕ → β)
+: false :=
+begin
+  let xx := (finsupp.total ℕ β α w).to_fun,
+end
+-/
 
 open polynomial
-open vector_space cardinal principal_ideal_domain submodule
+open vector_space principal_ideal_domain submodule
+
+/-- algebraically closed field -/
+class algebraically_closed (K : Type*) extends discrete_field K :=
+(exists_root {p : polynomial K} : 0 < degree p → ∃ a, is_root p a)
+
+
+set_option class.instance_max_depth 41
+
+
+universes u v w
+
+
+-- TODO: move to dimension.lean
+lemma linear_independent_le_dim {α : Type u} {β : Type v} {ι : Type w}
+  [discrete_field α] [decidable_eq β] [add_comm_group β] [vector_space α β] [decidable_eq ι]
+  {v : ι → β} (hv : linear_independent α v): cardinal.lift.{w v} (cardinal.mk ι) ≤ cardinal.lift.{v w} (dim α β) :=
+calc
+  cardinal.lift.{w v} (cardinal.mk ι) = cardinal.lift.{v w} (cardinal.mk (set.range v)) : 
+     (cardinal.mk_range_eq_of_inj (linear_independent.injective (field.zero_ne_one α) hv)).symm
+  ... = cardinal.lift.{v w} (dim α (span α (set.range v))) : by rw (dim_span hv).symm
+  ... ≤ cardinal.lift.{v w} (dim α β) : cardinal.lift_le.2 (dim_submodule_le (span α _))
+
+
+
+
+namespace algebraically_closed
+
+variables {α : Type u} [hα : algebraically_closed α]
+
+variables {β : Type v} [decidable_eq β] [add_comm_group β] [vector_space α β] (f : β →ₗ[α] β)
+
+set_option class.instance_max_depth 41
+
+#check classical.iff_iff_not_or_and_or_not
+
+--set_option pp.all true
+
+#check degree_eq_one_of_irreducible_of_root
+#check eq_X_add_C_of_degree_eq_one
+
+lemma exists_eigenvector (h_dim : dim α β < cardinal.omega) : ∃ (x : β) (c : α), f x = c • x :=
+begin
+  let v : β := sorry,
+  have hv : v ≠ 0, by sorry,
+  let w := (λ n : ℕ, (f ^ n) v), 
+  have h : ¬ linear_independent α w,
+  { intro hw,
+    apply not_lt_of_le _ h_dim,
+    rw [← cardinal.lift_id (dim α β), cardinal.lift_umax.{v 0}],
+    apply linear_independent_le_dim hw },
+  have := λ x, h (linear_independent_iff.2 x),
+  classical,
+  apply exists.elim (not_forall.1 this),
+  rcases not_forall.1 this with ⟨p, hp⟩,
+  rcases not_imp.1 hp with ⟨h_total_p, h_p_ne_0⟩,
+  let p : polynomial α := p, -- TODO: ask Zulip
+  have := factors_spec p h_p_ne_0,
+  let x := polynomial.eval₂ (λ a, a • linear_map.id) f p v,
+end
+
+end algebraically_closed
+
+
+namespace algebraically_closed
+
+variables {K : Type} [algebraically_closed K]
+
 
 -- TODO: move
-lemma polynomial.not_is_unit_X_sub_C {α : Type} [integral_domain α] [decidable_eq α]:  ∀ a : α, ¬ is_unit (X - C a) :=
+lemma polynomial.not_is_unit_X_sub_C {α : Type} [integral_domain α] [decidable_eq α]:  
+  ∀ a : α, ¬ is_unit (X - C a) :=
 begin intros a ha, 
   let ha' := degree_eq_zero_of_is_unit ha,
   rw [degree_X_sub_C] at ha',
   apply nat.zero_ne_one (option.injective_some _ ha'.symm)
 end
-
--- TODO: move to dimension.lean
-lemma linear_independed_le_dim {α β : Type} [discrete_field α] [add_comm_group β] [vector_space α β]
-{I : set β} (hI : linear_independent α I): cardinal.mk I ≤ dim α β :=
-calc
-  cardinal.mk I = dim α (span α I) : (dim_span hI).symm
-  ... ≤ dim α β : dim_submodule_le (span α I)
-
-/-- algebraically closed field -/
-class algebraically_closed (K : Type) extends discrete_field K :=
-(exists_root {p : polynomial K} : 0 < degree p → ∃ a, is_root p a)
-
-namespace algebraically_closed
-
-variables {K : Type} [algebraically_closed K]
 
 lemma degree_le_one_of_irreducible (p : polynomial K) : irreducible p → p.degree ≤ 1 :=
 begin
@@ -64,15 +128,6 @@ set_option class.instance_max_depth 41
 
 
 
-lemma exists_eigenvector : ∃ (x : V) (c : K), f.to_fun x = c • x :=
-begin
-  let s := λ x, set.range (λ n : ℕ, (f ^ n).to_fun x), --TODO: should be multiset ...
-  have h : ∀ x, ¬ linear_independent K (s x),
-  { intros x hs, 
-    let H:= linear_independed_le_dim hs,
-
-  }
-end
 
 set_option class.instance_max_depth 32
 
