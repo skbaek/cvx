@@ -88,7 +88,7 @@ open polynomial finsupp finset
 
 set_option class.instance_max_depth 40
 
-lemma eval₂_mul_noncomm (hf : ∀ a b, f a * b = b * f a) : 
+lemma eval₂_mul_noncomm (hf : ∀ b a, a * f b = f b * a) : 
   (p * q).eval₂ f x = p.eval₂ f x * q.eval₂ f x :=
 begin
   dunfold eval₂,
@@ -96,7 +96,7 @@ begin
   { apply sum_congr rfl, assume i hi, dsimp only, rw [sum_sum_index],
     { apply sum_congr rfl, assume j hj, dsimp only,
       rw [sum_single_index, map_mul f, pow_add],
-      { rw [mul_assoc, ←mul_assoc _ (x ^ i), hf _ (x ^ i)], 
+      { rw [mul_assoc, ←mul_assoc _ (x ^ i), ← hf _ (x ^ i)], 
         simp only [mul_assoc] },
       { rw [map_zero f, zero_mul] } },
     { intro, rw [map_zero f, zero_mul] },
@@ -168,7 +168,7 @@ calc
 
 -- TODO: move
 lemma eval₂_prod_noncomm {α β : Type*} [comm_ring α] [decidable_eq α] [semiring β]
-  (f : α → β) [is_semiring_hom f] (hf : ∀ a b, f a * b = b * f a) (x : β)
+  (f : α → β) [is_semiring_hom f] (hf : ∀ b a, a * f b = f b * a) (x : β)
   (ps : list (polynomial α)) : 
   polynomial.eval₂ f x ps.prod = (ps.map (λ p, (polynomial.eval₂ f x p))).prod :=
 begin 
@@ -262,9 +262,9 @@ lemma exists_noninjective_factor_of_eval₂_0 {α : Type v} {β : Type w}
   ∃ q ∈ factors p, ¬ function.injective ((polynomial.eval₂ smul_id f q : β →ₗ[α] β) : β → β) :=
 begin
   rcases (factors_spec p h_p_ne_0).2 with ⟨c, hc⟩,
-  have smul_id_comm : ∀ (a : α) (b : β →ₗ[α] β), smul_id a * b = b * smul_id a,
+  have smul_id_comm : ∀ (a : α) (b : β →ₗ[α] β), b * smul_id a = smul_id a * b,
   { intros a b, 
-    apply (algebra.commutes' a b).symm },
+    apply algebra.commutes' a b },
   rw mul_unit_eq_iff_mul_inv_eq at hc,
   rw [hc,
     @eval₂_mul_noncomm _ (β →ₗ[α] β) _ _ _ smul_id smul_id.is_semiring_hom f (factors p).prod 
@@ -321,17 +321,50 @@ begin
 end
 
 set_option class.instance_max_depth 50
+open polynomial
+
+--set_option pp.all true
+
+lemma leading_coeff_C_add_X {α : Type v} [integral_domain α] [decidable_eq α] (a b : α) (hb : b ≠ 0): 
+  leading_coeff (C a + C b * X) = b :=
+begin
+  rw leading_coeff_add_of_degree_lt,
+  { simp },
+  { simp [degree_C hb],
+    apply lt_of_le_of_lt degree_C_le (with_bot.coe_lt_coe.2 zero_lt_one)},
+end
+
+#check div_eq_div_iff
 
 lemma exists_eigenvector (α : Type v) (β : Type w) 
   [algebraically_closed α] [decidable_eq β] [add_comm_group β] [vector_space α β]
   (f : β →ₗ[α] β) (v : β) (hv : v ≠ 0) (h_lin_dep : ¬ linear_independent α (λ n : ℕ, (f ^ n) v)) : 
-  ∃ (x : β) (c : α), f x = c • x :=
+  ∃ (x : β) (c : α), x ≠ 0 ∧ f x = c • x :=
 begin
   have := λ h, h_lin_dep ((linear_independent_iff_eval₂ f v).2 h),
   haveI := classical.dec (∃ (x : polynomial α), ¬((polynomial.eval₂ smul_id f x) v = 0 → x = 0)),
   rcases not_forall.1 this with ⟨p, hp⟩,
   rcases not_imp.1 hp with ⟨h_eval_p, h_p_ne_0⟩,
   rcases exists_noninjective_factor_of_eval₂_0 f v hv p h_p_ne_0 h_eval_p with ⟨q, hq_mem, hq_noninj⟩,
-  have := polynomial.degree_eq_one_of_irreducible (ne_0_of_mem_factors h_p_ne_0 hq_mem) 
+  have h_q_ne_0 : q ≠ 0 := ne_0_of_mem_factors h_p_ne_0 hq_mem,
+  have h_deg_q : q.degree = 1 := polynomial.degree_eq_one_of_irreducible h_q_ne_0 
     ((factors_spec p h_p_ne_0).1 q hq_mem),
+  rw [←linear_map.ker_eq_bot, linear_map.ker_eq_bot', classical.not_forall] at hq_noninj,
+  simp only [not_imp] at hq_noninj,
+  rcases hq_noninj with ⟨x, hx₁, hx₂⟩,
+  use x, 
+  have h_q_eval₂ : polynomial.eval₂ smul_id f q = q.leading_coeff • f + smul_id (q.coeff 0),
+  { rw [polynomial.eq_X_add_C_of_degree_eq_one h_deg_q],
+    simp [eval₂_mul_noncomm smul_id f _ _ algebra.commutes',
+        leading_coeff_C_add_X _ _ (λ h, h_q_ne_0 (leading_coeff_eq_zero.1 h))],
+    refl,
+  },
+  rw h_q_eval₂ at hx₁,
+  dsimp [smul_id] at hx₁,
+  use -(coeff q 0 / q.leading_coeff),
+  split,
+  exact hx₂,
+  rw add_eq_zero_iff_eq_neg at hx₁,
+  have : ∃ x, x ≠ 0 ∧ (q.leading_coeff • f) x + q.coeff 0 • x = 0 := sorry,
+
 end
