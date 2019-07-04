@@ -4,28 +4,37 @@ import data.polynomial
 
 universes u v w
 
-#check @polynomial.euclidean_domain
-#check @linear_map.endomorphism_ring
-#check @linear_map.module
+class algebraically_closed (α : Type*) extends discrete_field α :=
+(exists_root {p : polynomial α} : 0 < polynomial.degree p → ∃ a, polynomial.is_root p a)
 
-
-#check @polynomial.degree_eq_one_of_irreducible_of_root
-lemma degree_eq_one_of_irreducible_of_root {α : Type*} [integral_domain α] [decidable_eq α] 
-{p q r : polynomial α} (hi : irreducible p) {x : α} (hx : polynomial.is_root p x) :
-  polynomial.degree p = 1 :=
-begin
-rcases polynomial.dvd_iff_is_root.2 hx with ⟨g, hg⟩,
-have : is_unit ( polynomial.X -  polynomial.C x) ∨ is_unit g, from hi.2 _ _ hg,
-apply this.elim,
-{ intro h,
-  have h₁ :  polynomial.degree ( polynomial.X -  polynomial.C x) = 1 := polynomial.degree_X_sub_C x,
-  -- have h₂ :  polynomial.degree ( polynomial.X -  polynomial.C x) = 0 :=  polynomial.degree_eq_zero_of_is_unit h,
-  -- rw h₁ at h₂,
-  --  exact absurd h₂ dec_trivial
-},
-{ intros hgu,
-  rw [hg, degree_mul_eq, degree_X_sub_C, degree_eq_zero_of_is_unit hgu, add_zero]}
+namespace polynomial
+variables {α : Type*} [algebraically_closed α]
+open polynomial
+-- TODO: move
+lemma not_is_unit_X_sub_C {α : Type*} [integral_domain α] [decidable_eq α]:  
+  ∀ a : α, ¬ is_unit (X - C a) :=
+begin intros a ha, 
+  let ha' := degree_eq_zero_of_is_unit ha,
+  rw [degree_X_sub_C] at ha',
+  apply nat.zero_ne_one (option.injective_some _ ha'.symm)
 end
+
+lemma degree_eq_one_of_irreducible {p : polynomial α} (h_nz : p ≠ 0) (hp : irreducible p) : 
+  p.degree = 1 :=
+begin
+  have h_0_le_deg_p : 0 < degree p := degree_pos_of_ne_zero_of_nonunit h_nz hp.1,
+  cases (algebraically_closed.exists_root h_0_le_deg_p) with a ha,
+  have h_p_eq_mul : (X - C a) * (p / (X - C a)) = p,
+  { apply mul_div_eq_iff_is_root.2 ha },
+  have h_unit : is_unit (p / (X - C a)),
+  from or.resolve_left 
+        (hp.2 (X - C a) (p / (X - C a)) h_p_eq_mul.symm) 
+        (polynomial.not_is_unit_X_sub_C a),
+  show degree p = 1,
+  { rw [←h_p_eq_mul, degree_mul_eq, degree_X_sub_C, degree_eq_zero_of_is_unit h_unit], 
+    simp }
+end
+end polynomial
 
 section smul_id
 variables {α : Type v} {β : Type w}
@@ -246,9 +255,6 @@ end
 
 --set_option pp.implicit true
 
-class algebraically_closed (α : Type*) extends discrete_field α :=
-(exists_root {p : polynomial α} : 0 < polynomial.degree p → ∃ a, polynomial.is_root p a)
-
 lemma exists_noninjective_factor_of_eval₂_0 {α : Type v} {β : Type w} 
   [discrete_field α] [decidable_eq β] [add_comm_group β] [vector_space α β]
   (f : β →ₗ[α] β) (v : β) (hv : v ≠ 0) 
@@ -296,6 +302,24 @@ begin
   }
 end
 
+
+lemma multiset.prod_eq_zero {α : Type v} [comm_semiring α] {s : multiset α} (h : (0 : α) ∈ s) : 
+  multiset.prod s = 0 :=
+begin
+  rcases multiset.exists_cons_of_mem h with ⟨s', hs'⟩,
+  simp [hs', multiset.prod_cons]
+end
+
+lemma ne_0_of_mem_factors {α : Type v} [discrete_field α] [decidable_eq α] {p q : polynomial α} 
+  (hp : p ≠ 0) (hq : q ∈ factors p) : q ≠ 0 :=
+begin
+  intro h_q_eq_0,
+  rw h_q_eq_0 at hq,
+  apply hp ((associated_zero_iff_eq_zero p).1 _),
+  rw ←multiset.prod_eq_zero hq,
+  apply (factors_spec p hp).2,
+end
+
 set_option class.instance_max_depth 50
 
 lemma exists_eigenvector (α : Type v) (β : Type w) 
@@ -308,5 +332,6 @@ begin
   rcases not_forall.1 this with ⟨p, hp⟩,
   rcases not_imp.1 hp with ⟨h_eval_p, h_p_ne_0⟩,
   rcases exists_noninjective_factor_of_eval₂_0 f v hv p h_p_ne_0 h_eval_p with ⟨q, hq_mem, hq_noninj⟩,
-  have := (factors_spec p h_p_ne_0).1 q hq_mem,
+  have := polynomial.degree_eq_one_of_irreducible (ne_0_of_mem_factors h_p_ne_0 hq_mem) 
+    ((factors_spec p h_p_ne_0).1 q hq_mem),
 end
