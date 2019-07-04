@@ -9,29 +9,62 @@ universes u v w
 #check @linear_map.module
 
 
+#check @polynomial.degree_eq_one_of_irreducible_of_root
+lemma degree_eq_one_of_irreducible_of_root {α : Type*} [integral_domain α] [decidable_eq α] 
+{p q r : polynomial α} (hi : irreducible p) {x : α} (hx : polynomial.is_root p x) :
+  polynomial.degree p = 1 :=
+begin
+rcases polynomial.dvd_iff_is_root.2 hx with ⟨g, hg⟩,
+have : is_unit ( polynomial.X -  polynomial.C x) ∨ is_unit g, from hi.2 _ _ hg,
+apply this.elim,
+{ intro h,
+  have h₁ :  polynomial.degree ( polynomial.X -  polynomial.C x) = 1 := polynomial.degree_X_sub_C x,
+  -- have h₂ :  polynomial.degree ( polynomial.X -  polynomial.C x) = 0 :=  polynomial.degree_eq_zero_of_is_unit h,
+  -- rw h₁ at h₂,
+  --  exact absurd h₂ dec_trivial
+},
+{ intros hgu,
+  rw [hg, degree_mul_eq, degree_X_sub_C, degree_eq_zero_of_is_unit hgu, add_zero]}
+end
+
 section smul_id
 variables {α : Type v} {β : Type w}
 
+
 def smul_id [comm_ring α] [add_comm_group β] [module α β] (a : α) : β →ₗ[α] β := a • linear_map.id
-
-
---local attribute [instance, priority 0] domain.to_ring
---local attribute [instance, priority 0] division_ring.to_ring
 
 instance smul_id.is_semiring_hom [comm_ring α] [add_comm_group β] [module α β] : 
 is_semiring_hom (smul_id : α → β →ₗ[α] β) := {
-  map_zero := sorry,
-  map_one := sorry,
-  map_add := sorry,
-  map_mul := sorry
+  map_zero := begin unfold smul_id, ext, simp end,
+  map_one := begin unfold smul_id, ext, simp end,
+  map_add := begin unfold smul_id, simp [add_smul] end,
+  map_mul := begin unfold smul_id, intros, ext, simp [mul_smul] end
 }
 
-lemma smul_id_comm [comm_ring α] [add_comm_group β] [module α β]
-  (a : α) (b : β →ₗ[α] β) : 
-  smul_id a * b = b * smul_id a :=
-begin
-  unfold smul_id,
-end
+instance smul_id.is_ring_hom [comm_ring α] [add_comm_group β] [module α β] : 
+is_ring_hom (smul_id : α → β →ₗ[α] β) := {
+  map_one := smul_id.is_semiring_hom.map_one,
+  map_add := smul_id.is_semiring_hom.map_add,
+  map_mul := smul_id.is_semiring_hom.map_mul
+}
+
+instance [comm_ring α] [add_comm_group β] [module α β] : algebra α (β →ₗ[α] β) := 
+{ to_fun := smul_id,
+  commutes' := 
+  begin 
+    intros a f, 
+    unfold smul_id, 
+    ext, 
+    simp, 
+  end,
+  smul_def' := 
+  begin
+    intros a f, 
+    unfold smul_id, 
+    ext, 
+    simp, 
+  end
+}
 
 end smul_id
 
@@ -211,59 +244,35 @@ begin
     apply hl _ (list.mem_cons_self _ _) }
 end
 
-#check 
- list.foldl_map' linear_map.to_fun linear_map.comp function.comp _ _ (λ _ _, rfl)
-
-#check linear_map.ker_eq_bot'.symm.trans linear_map.ker_eq_bot
-
 --set_option pp.implicit true
 
 class algebraically_closed (α : Type*) extends discrete_field α :=
 (exists_root {p : polynomial α} : 0 < polynomial.degree p → ∃ a, polynomial.is_root p a)
 
-lemma field_to_ring_diamond (α : Type*) [h : field α] :
-  @domain.to_ring α (@division_ring.to_domain α (@field.to_division_ring α h))
-  = @comm_ring.to_ring α (@field.to_comm_ring α h) := 
-rfl
-
-lemma xxx (α : Type v) (β : Type w) 
-  [discrete_field α] [decidable_eq β] [add_comm_group β] [module α β]
+lemma exists_noninjective_factor_of_eval₂_0 {α : Type v} {β : Type w} 
+  [discrete_field α] [decidable_eq β] [add_comm_group β] [vector_space α β]
   (f : β →ₗ[α] β) (v : β) (hv : v ≠ 0) 
   (p : polynomial α) (h_p_ne_0 : p ≠ 0) (h_eval_p : (polynomial.eval₂ smul_id f p) v = 0) : 
   ∃ q ∈ factors p, ¬ function.injective ((polynomial.eval₂ smul_id f q : β →ₗ[α] β) : β → β) :=
 begin
   rcases (factors_spec p h_p_ne_0).2 with ⟨c, hc⟩,
+  have smul_id_comm : ∀ (a : α) (b : β →ₗ[α] β), smul_id a * b = b * smul_id a,
+  { intros a b, 
+    apply (algebra.commutes' a b).symm },
   rw mul_unit_eq_iff_mul_inv_eq at hc,
-  --have := hc,
---let :=  (λ (a : α), has_scalar.smul a (linear_map.id : β →ₗ[α] β)) ,
-  --let smul := @has_scalar.smul _ _ (@mul_action.to_has_scalar _ _ _ (@distrib_mul_action.to_mul_action _ _ _ _ (@semimodule.to_distrib_mul_action _ _ _ _ (@module.to_semimodule _ _ _ _ (vector_space.to_module _ _))))),
-  rw hc at h_eval_p,
-  --rw eval₂_mul_noncomm at h_eval_p,
-  have := @eval₂_mul_noncomm _ (β →ₗ[α] β) _ _ _ smul_id smul_id.is_semiring_hom f (factors p).prod (@has_inv.inv (units (polynomial α)) _ c) _,
-  rw this at h_eval_p,
-  rw polynomial.eq_C_of_degree_eq_zero (polynomial.degree_coe_units (c⁻¹)) at h_eval_p,
-  rw polynomial.eval₂_C at h_eval_p,
-  --dsimp only [(*), mul_zero_class.mul, semiring.mul, ring.mul] at this,
-  --rw linear_map.comp_apply at this_1,
-  rw ← multiset.coe_to_list (factors p) at h_eval_p,
-  rw multiset.coe_prod at h_eval_p,
-  rw eval₂_prod_noncomm at h_eval_p,
-
-  have h_noninj : ¬ function.injective ⇑(list.prod (list.map (λ p, polynomial.eval₂ smul_id f p) (multiset.to_list (factors p))) *
+  rw [hc,
+    @eval₂_mul_noncomm _ (β →ₗ[α] β) _ _ _ smul_id smul_id.is_semiring_hom f (factors p).prod 
+      (@has_inv.inv (units (polynomial α)) _ c) smul_id_comm,
+    polynomial.eq_C_of_degree_eq_zero (polynomial.degree_coe_units (c⁻¹)),
+    polynomial.eval₂_C, ← multiset.coe_to_list (factors p), multiset.coe_prod,
+    eval₂_prod_noncomm _ smul_id_comm] at h_eval_p,
+  have h_noninj : ¬ function.injective ⇑(list.prod 
+    (list.map (λ p, polynomial.eval₂ (smul_id : α → β →ₗ[α] β) f p) (multiset.to_list (factors p))) *
     smul_id (polynomial.coeff ↑c⁻¹ 0)),
-  { rw ←linear_map.ker_eq_bot,
-    rw linear_map.ker_eq_bot',
-    rw classical.not_forall,
+  { rw [←linear_map.ker_eq_bot, linear_map.ker_eq_bot', classical.not_forall],
     use v, 
-    rw not_imp,
-    exact ⟨h_eval_p, hv⟩ },
-
-
-  dsimp only [(*), mul_zero_class.mul, semiring.mul, ring.mul] at h_noninj,
-
-  dsimp only [list.prod, (*), mul_zero_class.mul, semiring.mul, ring.mul] at h_noninj,
-
-  show ∃ q ∈ factors p, ¬ function.injective ((polynomial.eval₂ smul_id f q : β →ₗ[α] β) : β → β), --use .to_fun instead?
+    exact not_imp.2 (and.intro h_eval_p hv) },
+  show ∃ q ∈ factors p, ¬ function.injective ((polynomial.eval₂ smul_id f q).to_fun),
   { classical,
     by_contra h_contra,
     simp only [not_exists, not_not] at h_contra, 
@@ -275,28 +284,22 @@ begin
       rw multiset.mem_to_list at hq₁,
       rw ←hq₂,
       exact h_contra q hq₁ },
-    have := function.injective_foldl_comp (λ g, h_factors_inj g) function.injective_id,-- (begin intros f hf, convert h_contra _ _, sorry end),
     refine h_noninj (function.injective_comp _ _),
     { unfold_coes,
+      dsimp only [list.prod, (*), mul_zero_class.mul, semiring.mul, ring.mul],
       rw list.foldl_map' linear_map.to_fun linear_map.comp function.comp _ _ (λ _ _, rfl),
       rw list.map_map,
       unfold function.comp,
-      apply this },
-    { intros x y hxy,
-      simp at hxy,
-      
-      dunfold smul_id at hxy,
-      rw [linear_map.smul_apply, linear_map.smul_apply] at hxy,
-      have := congr_arg (has_scalar.smul (polynomial.coeff ↑c⁻¹ 0)⁻¹) hxy,
-      rw [←mul_action.mul_smul, ←mul_action.mul_smul, 
-          division_ring.inv_mul_cancel, one_smul, one_smul] at this,
-      exact this,
+      apply function.injective_foldl_comp (λ g, h_factors_inj g) function.injective_id },
+    { rw [←linear_map.ker_eq_bot, smul_id, linear_map.ker_smul, linear_map.ker_id],
       apply polynomial.coeff_coe_units_zero_ne_zero }
-  },
+  }
 end
 
+set_option class.instance_max_depth 50
+
 lemma exists_eigenvector (α : Type v) (β : Type w) 
-  [algebraically_closed α] [decidable_eq β] [add_comm_group β] [module α β]
+  [algebraically_closed α] [decidable_eq β] [add_comm_group β] [vector_space α β]
   (f : β →ₗ[α] β) (v : β) (hv : v ≠ 0) (h_lin_dep : ¬ linear_independent α (λ n : ℕ, (f ^ n) v)) : 
   ∃ (x : β) (c : α), f x = c • x :=
 begin
@@ -304,72 +307,6 @@ begin
   haveI := classical.dec (∃ (x : polynomial α), ¬((polynomial.eval₂ smul_id f x) v = 0 → x = 0)),
   rcases not_forall.1 this with ⟨p, hp⟩,
   rcases not_imp.1 hp with ⟨h_eval_p, h_p_ne_0⟩,
-  rcases (factors_spec p h_p_ne_0).2 with ⟨c, hc⟩,
-  rw mul_unit_eq_iff_mul_inv_eq at hc,
-  --have := hc,
---let :=  (λ (a : α), has_scalar.smul a (linear_map.id : β →ₗ[α] β)) ,
-  --let smul := @has_scalar.smul _ _ (@mul_action.to_has_scalar _ _ _ (@distrib_mul_action.to_mul_action _ _ _ _ (@semimodule.to_distrib_mul_action _ _ _ _ (@module.to_semimodule _ _ _ _ (vector_space.to_module _ _))))),
-  rw hc at h_eval_p,
-  --rw eval₂_mul_noncomm at h_eval_p,
-  have := @eval₂_mul_noncomm _ (β →ₗ[α] β) _ _ _ smul_id smul_id.is_semiring_hom f (factors p).prod (@has_inv.inv (units (polynomial α)) _ c) _,
-  rw this at h_eval_p,
-  rw polynomial.eq_C_of_degree_eq_zero (polynomial.degree_coe_units (c⁻¹)) at h_eval_p,
-  rw polynomial.eval₂_C at h_eval_p,
-  --dsimp only [(*), mul_zero_class.mul, semiring.mul, ring.mul] at this,
-  --rw linear_map.comp_apply at this_1,
-  rw ← multiset.coe_to_list (factors p) at h_eval_p,
-  rw multiset.coe_prod at h_eval_p,
-  rw eval₂_prod_noncomm at h_eval_p,
-
-  have h_noninj : ¬ function.injective ⇑(list.prod (list.map (λ p, polynomial.eval₂ smul_id f p) (multiset.to_list (factors p))) *
-    smul_id (polynomial.coeff ↑c⁻¹ 0)),
-  { rw ←linear_map.ker_eq_bot,
-    rw linear_map.ker_eq_bot',
-    rw classical.not_forall,
-    use v, 
-    rw not_imp,
-    exact ⟨h_eval_p, hv⟩ },
-
-
-  dsimp only [(*), mul_zero_class.mul, semiring.mul, ring.mul] at h_noninj,
-
-  dsimp only [list.prod, (*), mul_zero_class.mul, semiring.mul, ring.mul] at h_noninj,
-
-  have : ∃ q ∈ factors p, ¬ function.injective ((polynomial.eval₂ smul_id f q : β →ₗ[α] β) : β → β), --use .to_fun instead?
-  { classical,
-    by_contra h_contra,
-    simp only [not_exists, not_not] at h_contra, 
-    have h_factors_inj : ∀ g ∈ (factors p).to_list.map (λ q, (polynomial.eval₂ smul_id f q).to_fun),
-        function.injective g,
-    { intros g hg,
-      rw list.mem_map at hg,
-      rcases hg with ⟨q, hq₁, hq₂⟩,
-      rw multiset.mem_to_list at hq₁,
-      rw ←hq₂,
-      exact h_contra q hq₁ },
-    have := function.injective_foldl_comp (λ g, h_factors_inj g) function.injective_id,-- (begin intros f hf, convert h_contra _ _, sorry end),
-    refine h_noninj (function.injective_comp _ _),
-    { unfold_coes,
-      rw list.foldl_map' linear_map.to_fun linear_map.comp function.comp _ _ (λ _ _, rfl),
-      rw list.map_map,
-      unfold function.comp,
-      apply this },
-    { intros x y hxy,
-      simp at hxy,
-      
-      dunfold smul_id at hxy,
-      rw [linear_map.smul_apply, linear_map.smul_apply] at hxy,
-      have := congr_arg (has_scalar.smul (polynomial.coeff ↑c⁻¹ 0)⁻¹) hxy,
-      rw [←mul_action.mul_smul, ←mul_action.mul_smul, 
-          division_ring.inv_mul_cancel, one_smul, one_smul] at this,
-      exact this,
-      apply polynomial.coeff_coe_units_zero_ne_zero }
-  }
+  rcases exists_noninjective_factor_of_eval₂_0 f v hv p h_p_ne_0 h_eval_p with ⟨q, hq_mem, hq_noninj⟩,
+  have := (factors_spec p h_p_ne_0).1 q hq_mem,
 end
-
-
-
-lemma exists_eigenvector (α : Type v) (β : Type w) 
-  [algebraically_closed α] [decidable_eq β] [add_comm_group β] [module α β]
-  (f : β →ₗ[α] β) (v : β) (hv : v ≠ 0) (h_lin_dep : ¬ linear_independent α (λ n : ℕ, (f ^ n) v)) : 
-  ∃ (x : β) (c : α), f x = c • x := sorry
