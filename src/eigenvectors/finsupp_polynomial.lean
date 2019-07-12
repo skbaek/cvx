@@ -180,10 +180,10 @@ end
 --set_option pp.all true
 #check @eval₂_prod_noncomm
 
-local attribute [instance, priority 0] division_ring.to_ring
-local attribute [instance, priority 0] domain.to_ring
-local attribute [instance, priority 0] euclidean_domain.to_nonzero_comm_ring
-local attribute [instance, priority 0] nonzero_comm_ring.to_comm_ring
+--local attribute [instance, priority 0] division_ring.to_ring
+--local attribute [instance, priority 0] domain.to_ring
+--local attribute [instance, priority 0] euclidean_domain.to_nonzero_comm_ring
+--local attribute [instance, priority 0] nonzero_comm_ring.to_comm_ring
 
 lemma powers_linear_dependent_of_dim_finite (α : Type v) (β : Type w) 
   [discrete_field α] [decidable_eq β] [add_comm_group β] [vector_space α β]
@@ -201,16 +201,6 @@ end
 #check @powers_linear_dependent_of_dim_finite
 
 set_option class.instance_max_depth 35
-local attribute [instance, priority 0] polynomial.comm_semiring
-local attribute [instance, priority 0] polynomial.nonzero_comm_semiring
-local attribute [instance, priority 0] polynomial.nonzero_comm_ring
-
-
-local attribute [instance, priority 0] polynomial.has_mul
-local attribute [instance, priority 0] polynomial.comm_ring
-local attribute [instance, priority 0] nonzero_comm_semiring.to_comm_semiring
-
---set_option pp.all true
 
 lemma mul_unit_eq_iff_mul_inv_eq {α : Type u} [monoid α] (a b : α) (c : units α) : 
 a * c = b ↔ a = b * (@has_inv.inv (units α) _ c) :=
@@ -310,14 +300,22 @@ begin
   simp [hs', multiset.prod_cons]
 end
 
-lemma ne_0_of_mem_factors {α : Type v} [discrete_field α] [decidable_eq α] {p q : polynomial α} 
+--local attribute [instance, priority 0] polynomial.comm_semiring
+--local attribute [instance, priority 0] polynomial.nonzero_comm_semiring
+--local attribute [instance, priority 0] polynomial.nonzero_comm_ring
+
+--local attribute [instance, priority 0] polynomial.has_mul
+--local attribute [instance, priority 0] polynomial.comm_ring
+--local attribute [instance, priority 0] nonzero_comm_semiring.to_comm_semiring
+
+lemma ne_0_of_mem_factors {α : Type v} [discrete_field α] {p q : polynomial α} 
   (hp : p ≠ 0) (hq : q ∈ factors p) : q ≠ 0 :=
 begin
   intro h_q_eq_0,
   rw h_q_eq_0 at hq,
   apply hp ((associated_zero_iff_eq_zero p).1 _),
   rw ←multiset.prod_eq_zero hq,
-  apply (factors_spec p hp).2,
+  apply (factors_spec p hp).2
 end
 
 set_option class.instance_max_depth 50
