@@ -39,7 +39,6 @@ end polynomial
 section smul_id
 variables {α : Type v} {β : Type w}
 
-
 def smul_id [comm_ring α] [add_comm_group β] [module α β] (a : α) : β →ₗ[α] β := a • linear_map.id
 
 instance smul_id.is_semiring_hom [comm_ring α] [add_comm_group β] [module α β] : 
@@ -79,14 +78,10 @@ end smul_id
 
 section eval₂
 --TODO: move
---local attribute [instance, priority 0] domain.to_ring
---local attribute [instance, priority 0] division_ring.to_ring
 variables {α : Type u} {β : Type v} [comm_ring α] [decidable_eq α] [semiring β]
 variables (f : α → β) [is_semiring_hom f] (x : β) (p q : polynomial α)
 open is_semiring_hom
 open polynomial finsupp finset
-
-set_option class.instance_max_depth 40
 
 lemma eval₂_mul_noncomm (hf : ∀ b a, a * f b = f b * a) : 
   (p * q).eval₂ f x = p.eval₂ f x * q.eval₂ f x :=
@@ -105,15 +100,9 @@ begin
   { intros, rw [map_add f, add_mul] }
 end
 
-set_option pp.all true
-#check eval₂_mul_noncomm
-
 end eval₂
 
---set_option pp.all true
---#check @eval₂_mul_noncomm _ _ _ _ _ smul_id
-
-
+-- TODO: move ?
 lemma finsupp_total_eq_eval₂ (α : Type v) (β : Type w)
   [decidable_eq α] [comm_ring α] [decidable_eq β] [add_comm_group β] [module α β]
   (f : β →ₗ[α] β) (v : β) (p : polynomial α) : 
@@ -125,9 +114,7 @@ begin
   simp
 end
 
---set_option pp.all true
---#check @finsupp_total_eq_eval₂
-
+-- TODO: move ?
 lemma linear_independent_iff_eval₂ {α : Type v} {β : Type w}
   [decidable_eq α] [comm_ring α] [decidable_eq β] [add_comm_group β] [module α β]
   (f : β →ₗ[α] β) (v : β) : 
@@ -136,17 +123,9 @@ lemma linear_independent_iff_eval₂ {α : Type v} {β : Type w}
 by simp only [linear_independent_iff, finsupp.total_apply, finsupp_total_eq_eval₂]; refl
 
 
---set_option pp.all true
---#check @linear_independent_iff_eval₂
-
-
 open vector_space principal_ideal_domain
 
---local attribute [instance, priority 10000000] field.to_division_ring
---local attribute [instance, priority 0] discrete_field.to_euclidean_domain
-
 -- TODO: move to dimension.lean
--- TODO: how can we force @comm_ring.to_ring _ (field.to_comm_ring _) ???
 lemma linear_independent_le_dim {α : Type u} {β : Type v} {ι : Type w}
   [discrete_field α] [decidable_eq β] [add_comm_group β] [vector_space α β] [decidable_eq ι]
   {v : ι → β} (hv : @linear_independent _ α _ v _ _ _ (@comm_ring.to_ring _ (field.to_comm_ring _)) _ _) : 
@@ -156,15 +135,6 @@ calc
      (cardinal.mk_range_eq_of_inj (linear_independent.injective (field.zero_ne_one α) hv)).symm
   ... = cardinal.lift.{v w} (dim α (submodule.span α (set.range v))) : by rw (dim_span hv).symm
   ... ≤ cardinal.lift.{v w} (dim α β) : cardinal.lift_le.2 (dim_submodule_le (submodule.span α _))
-
-
---set_option pp.all true
-#check @linear_independent_le_dim
-
-#check polynomial.degree_eq_zero_of_is_unit
-#check polynomial.eval₂_mul
-
---set_option trace.class_instances true
 
 -- TODO: move
 lemma eval₂_prod_noncomm {α β : Type*} [comm_ring α] [decidable_eq α] [semiring β]
@@ -177,14 +147,6 @@ begin
   simp [eval₂_mul_noncomm f _ _ _ hf, ps_ih] {contextual := tt}
 end
 
---set_option pp.all true
-#check @eval₂_prod_noncomm
-
---local attribute [instance, priority 0] division_ring.to_ring
---local attribute [instance, priority 0] domain.to_ring
---local attribute [instance, priority 0] euclidean_domain.to_nonzero_comm_ring
---local attribute [instance, priority 0] nonzero_comm_ring.to_comm_ring
-
 lemma powers_linear_dependent_of_dim_finite (α : Type v) (β : Type w) 
   [discrete_field α] [decidable_eq β] [add_comm_group β] [vector_space α β]
   (f : β →ₗ[α] β) (h_dim : dim α β < cardinal.omega) (v : β) : 
@@ -193,14 +155,9 @@ begin
   intro hw,
   apply not_lt_of_le _ h_dim,
   rw [← cardinal.lift_id (dim α β), cardinal.lift_umax.{w 0}],
-  unfold cardinal.omega,
   apply linear_independent_le_dim hw
 end
 
---set_option pp.all true
-#check @powers_linear_dependent_of_dim_finite
-
-set_option class.instance_max_depth 35
 
 lemma mul_unit_eq_iff_mul_inv_eq {α : Type u} [monoid α] (a b : α) (c : units α) : 
 a * c = b ↔ a = b * (@has_inv.inv (units α) _ c) :=
@@ -300,14 +257,6 @@ begin
   simp [hs', multiset.prod_cons]
 end
 
---local attribute [instance, priority 0] polynomial.comm_semiring
---local attribute [instance, priority 0] polynomial.nonzero_comm_semiring
---local attribute [instance, priority 0] polynomial.nonzero_comm_ring
-
---local attribute [instance, priority 0] polynomial.has_mul
---local attribute [instance, priority 0] polynomial.comm_ring
---local attribute [instance, priority 0] nonzero_comm_semiring.to_comm_semiring
-
 lemma ne_0_of_mem_factors {α : Type v} [discrete_field α] {p q : polynomial α} 
   (hp : p ≠ 0) (hq : q ∈ factors p) : q ≠ 0 :=
 begin
@@ -318,10 +267,7 @@ begin
   apply (factors_spec p hp).2
 end
 
-set_option class.instance_max_depth 50
 open polynomial
-
---set_option pp.all true
 
 lemma leading_coeff_C_add_X {α : Type v} [integral_domain α] [decidable_eq α] (a b : α) (hb : b ≠ 0): 
   leading_coeff (C a + C b * X) = b :=
@@ -332,8 +278,8 @@ begin
     apply lt_of_le_of_lt degree_C_le (with_bot.coe_lt_coe.2 zero_lt_one)},
 end
 
-#check div_eq_div_iff
-
+section
+set_option class.instance_max_depth 50
 lemma exists_eigenvector (α : Type v) (β : Type w) 
   [algebraically_closed α] [decidable_eq β] [add_comm_group β] [vector_space α β]
   (f : β →ₗ[α] β) (v : β) (hv : v ≠ 0) (h_lin_dep : ¬ linear_independent α (λ n : ℕ, (f ^ n) v)) : 
@@ -347,22 +293,26 @@ begin
   have h_q_ne_0 : q ≠ 0 := ne_0_of_mem_factors h_p_ne_0 hq_mem,
   have h_deg_q : q.degree = 1 := polynomial.degree_eq_one_of_irreducible h_q_ne_0 
     ((factors_spec p h_p_ne_0).1 q hq_mem),
-  rw [←linear_map.ker_eq_bot, linear_map.ker_eq_bot', classical.not_forall] at hq_noninj,
-  simp only [not_imp] at hq_noninj,
-  rcases hq_noninj with ⟨x, hx₁, hx₂⟩,
-  use x, 
   have h_q_eval₂ : polynomial.eval₂ smul_id f q = q.leading_coeff • f + smul_id (q.coeff 0),
   { rw [polynomial.eq_X_add_C_of_degree_eq_one h_deg_q],
     simp [eval₂_mul_noncomm smul_id f _ _ algebra.commutes',
         leading_coeff_C_add_X _ _ (λ h, h_q_ne_0 (leading_coeff_eq_zero.1 h))],
-    refl,
-  },
-  rw h_q_eval₂ at hx₁,
-  dsimp [smul_id] at hx₁,
+    refl },
+  rw [←linear_map.ker_eq_bot, linear_map.ker_eq_bot', classical.not_forall] at hq_noninj,
+  simp only [not_imp] at hq_noninj,
+  rcases hq_noninj with ⟨x, hx₁, hx₂⟩,
+  use x, 
   use -(coeff q 0 / q.leading_coeff),
-  split,
-  exact hx₂,
-  rw add_eq_zero_iff_eq_neg at hx₁,
-  have : ∃ x, x ≠ 0 ∧ (q.leading_coeff • f) x + q.coeff 0 • x = 0 := sorry,
-
+  refine ⟨hx₂, _⟩,
+  have h_fx_x_lin_dep: leading_coeff q • f x + coeff q 0 • x = 0,
+  { rw h_q_eval₂ at hx₁,
+    dsimp [smul_id] at hx₁,
+    exact hx₁ },
+  show f x = -(coeff q 0 / leading_coeff q) • x,
+  { rw neg_smul,
+    have : (leading_coeff q)⁻¹ • leading_coeff q • f x = (leading_coeff q)⁻¹ • -(coeff q 0 • x) := 
+      congr_arg (λ x, (leading_coeff q)⁻¹ • x) (add_eq_zero_iff_eq_neg.1 h_fx_x_lin_dep),
+    simpa [smul_smul, inv_mul_cancel (λ h, h_q_ne_0 (leading_coeff_eq_zero.1 h)), 
+      mul_comm _ (coeff q 0), div_eq_mul_inv.symm] }
+end
 end
