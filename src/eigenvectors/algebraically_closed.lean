@@ -65,13 +65,11 @@ lemma exists_noninjective_factor_of_eval₂_0 {α : Type v} {β : Type w}
   ∃ q ∈ factors p, ¬ function.injective ((polynomial.eval₂ smul_id f q : β →ₗ[α] β) : β → β) :=
 begin
   rcases (factors_spec p h_p_ne_0).2 with ⟨c, hc⟩,
-  have smul_id_comm : ∀ (a : α) (b : β →ₗ[α] β), b * smul_id a = smul_id a * b,
-  { intros a b, 
-    apply algebra.commutes' a b },
+  have smul_id_comm : ∀ (a : α) (b : β →ₗ[α] β), b * smul_id a = smul_id a * b := algebra.commutes',
   rw mul_unit_eq_iff_mul_inv_eq at hc,
   rw [hc,
     @eval₂_mul_noncomm _ (β →ₗ[α] β) _ _ _ smul_id smul_id.is_semiring_hom f (factors p).prod 
-      (@has_inv.inv (units (polynomial α)) _ c) smul_id_comm,
+      (@has_inv.inv (units (polynomial α)) _ c) algebra.commutes',
     polynomial.eq_C_of_degree_eq_zero (polynomial.degree_coe_units (c⁻¹)),
     polynomial.eval₂_C, ← multiset.coe_to_list (factors p), multiset.coe_prod,
     eval₂_prod_noncomm _ smul_id_comm] at h_eval_p,
@@ -105,13 +103,21 @@ begin
   }
 end
 
+section eigenvector
+
+variables (α : Type v) (β : Type w) [decidable_eq β] [add_comm_group β]
+
+-- section
+-- set_option class.instance_max_depth 50
+-- def eigenvector [discrete_field α] [vector_space α β] (f : β →ₗ[α] β) (μ : α) (x : β) : Prop := f x = μ • x
+-- end
 
 open polynomial
 
 section
 set_option class.instance_max_depth 50
-lemma exists_eigenvector (α : Type v) (β : Type w) 
-  [algebraically_closed α] [decidable_eq β] [add_comm_group β] [vector_space α β]
+lemma exists_eigenvector 
+  [algebraically_closed α] [vector_space α β]
   (f : β →ₗ[α] β) (v : β) (hv : v ≠ 0) (h_lin_dep : ¬ linear_independent α (λ n : ℕ, (f ^ n) v)) : 
   ∃ (x : β) (c : α), x ≠ 0 ∧ f x = c • x :=
 begin
@@ -146,3 +152,41 @@ begin
       mul_comm _ (coeff q 0), div_eq_mul_inv.symm] }
 end
 end
+
+section
+set_option class.instance_max_depth 50
+
+lemma eigenvectors_linear_independent [discrete_field α] [vector_space α β] 
+  (f : β →ₗ[α] β) (μs : set α) (xs : μs → β) 
+  (h_xs_nonzero : ∀ x ∈ set.range xs, x ≠ (0 : β)) (h_eigenvec : ∀ μ : μs, f (xs μ) = (μ : α) • xs μ): 
+  linear_independent α xs := 
+begin
+
+  rw linear_independent_iff,
+  intros l hl,
+  induction h_l_support : l.support using finset.induction with μ₀ l_support' hμ₀ ih generalizing l,
+  { exact finsupp.support_eq_empty.1 h_l_support },
+  { let g := f - smul_id μ₀, 
+    have := congr_arg g hl,
+    have h_finsupp: ∀ (a : μs), a ∈ l_support' ↔ (↑a - ↑μ₀) * l a ≠ 0,
+    { sorry },
+    let l' : μs →₀ α := ⟨l_support', λ μ, (↑μ - ↑μ₀) * l μ, h_finsupp⟩,
+    have : l' = 0,
+    { apply ih l', sorry, sorry},
+    
+     },
+  have : ∀ μ₀ : μs, l μ₀ = 0,
+  { intro μ₀,
+    let μs' := (l.support.erase μ₀).val,
+    let p_factors := μs'.map (λ μ : μs, X - C (↑μ : α)),
+    let p := p_factors.prod,
+    let g := eval₂ smul_id f p,
+    have := eval₂_prod_noncomm _ algebra.commutes' f p_factors.to_list,
+    -- let g_factors := μs'.map (λ μ : μs, f - smul_id ↑μ),
+    -- let g := g_factors.prod,
+    -- have := congr_arg g hl,
+  },
+end
+end
+
+end eigenvector
