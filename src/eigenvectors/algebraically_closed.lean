@@ -1,6 +1,7 @@
 import ring_theory.principal_ideal_domain
 import missing_mathlib.data.polynomial
 import missing_mathlib.data.multiset
+import missing_mathlib.data.finsupp
 import missing_mathlib.linear_algebra.dimension
 import missing_mathlib.algebra.group.units
 import missing_mathlib.data.list.basic
@@ -161,31 +162,42 @@ lemma eigenvectors_linear_independent [discrete_field α] [vector_space α β]
   (h_xs_nonzero : ∀ x ∈ set.range xs, x ≠ (0 : β)) (h_eigenvec : ∀ μ : μs, f (xs μ) = (μ : α) • xs μ): 
   linear_independent α xs := 
 begin
-
   rw linear_independent_iff,
   intros l hl,
   induction h_l_support : l.support using finset.induction with μ₀ l_support' hμ₀ ih generalizing l,
   { exact finsupp.support_eq_empty.1 h_l_support },
-  { let g := f - smul_id μ₀, 
-    have := congr_arg g hl,
-    have h_finsupp: ∀ (a : μs), a ∈ l_support' ↔ (↑a - ↑μ₀) * l a ≠ 0,
-    { sorry },
-    let l' : μs →₀ α := ⟨l_support', λ μ, (↑μ - ↑μ₀) * l μ, h_finsupp⟩,
+  { 
+    let l'_f := (λ μ : (↑(l_support') : set μs), (↑μ - ↑μ₀) * l μ),
+    let l' : μs →₀ α := finsupp.on_finset' l_support' l'_f,
     have : l' = 0,
-    { apply ih l', sorry, sorry},
-    
-     },
-  have : ∀ μ₀ : μs, l μ₀ = 0,
-  { intro μ₀,
-    let μs' := (l.support.erase μ₀).val,
-    let p_factors := μs'.map (λ μ : μs, X - C (↑μ : α)),
-    let p := p_factors.prod,
-    let g := eval₂ smul_id f p,
-    have := eval₂_prod_noncomm _ algebra.commutes' f p_factors.to_list,
-    -- let g_factors := μs'.map (λ μ : μs, f - smul_id ↑μ),
-    -- let g := g_factors.prod,
-    -- have := congr_arg g hl,
-  },
+    { apply ih l', sorry,
+      dsimp only [l'],
+      ext a,
+      rw finsupp.on_finset'_support l_support' l'_f a,
+      by_cases h_cases: a ∈ l_support',
+      { refine iff_of_true _ h_cases,
+        rw dif_pos h_cases,
+        dsimp only [l'_f],
+        sorry },
+      { refine iff_of_false _ h_cases,
+        rw dif_neg h_cases, 
+        cc } },
+
+    let g := f - smul_id μ₀, 
+    have := congr_arg g hl,
+
+    --let l' : μs →₀ α := finsupp.map l  sorry, 
+    }, sorry
+    --have h_finsupp: ∀ (a : μs), a ∈ l_support' ↔ l'.support,
+    --{ sorry },
+  -- have : ∀ μ₀ : μs, l μ₀ = 0,
+  -- { intro μ₀,
+  --   let μs' := (l.support.erase μ₀).val,
+  --   let p_factors := μs'.map (λ μ : μs, X - C (↑μ : α)),
+  --   let p := p_factors.prod,
+  --   let g := eval₂ smul_id f p,
+  --   have := eval₂_prod_noncomm _ algebra.commutes' f p_factors.to_list,
+  -- },
 end
 end
 
