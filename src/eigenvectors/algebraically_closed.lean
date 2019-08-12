@@ -169,22 +169,26 @@ begin
   { 
     let l'_f := (λ μ : (↑(l_support') : set μs), (↑μ - ↑μ₀) * l μ),
     let l' : μs →₀ α := finsupp.on_finset' l_support' l'_f,
-    have : l' = 0,
-    { apply ih l', sorry,
-      dsimp only [l'],
-      ext a,
-      rw finsupp.on_finset'_support l_support' l'_f a,
-      by_cases h_cases: a ∈ l_support',
-      { refine iff_of_true _ h_cases,
-        rw dif_pos h_cases,
-        dsimp only [l'_f],
-        sorry },
-      { refine iff_of_false _ h_cases,
-        rw dif_neg h_cases, 
-        cc } },
-
+    have l'_eq_0 : l' = 0,
+    { apply ih l', 
+      show l'.support = l_support',
+      { dsimp only [l'],
+        ext a,
+        rw finsupp.on_finset'_mem_support l_support' l'_f a,
+        by_cases h_cases: a ∈ l_support',
+        { refine iff_of_true _ h_cases,
+          rw dif_pos h_cases,
+          dsimp only [l'_f],
+          sorry },
+        { refine iff_of_false _ h_cases,
+          rw dif_neg h_cases, 
+          cc } },
+      { 
     let g := f - smul_id μ₀, 
     have := congr_arg g hl,
+    }, },
+      
+
 
     --let l' : μs →₀ α := finsupp.map l  sorry, 
     }, sorry
