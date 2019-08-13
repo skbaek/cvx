@@ -3,6 +3,7 @@ import missing_mathlib.data.polynomial
 import missing_mathlib.data.multiset
 import missing_mathlib.data.finsupp
 import missing_mathlib.linear_algebra.dimension
+import missing_mathlib.linear_algebra.finsupp
 import missing_mathlib.algebra.group.units
 import missing_mathlib.data.list.basic
 import analysis.complex.polynomial
@@ -159,7 +160,7 @@ set_option class.instance_max_depth 50
 
 lemma eigenvectors_linear_independent [discrete_field α] [vector_space α β] 
   (f : β →ₗ[α] β) (μs : set α) (xs : μs → β) 
-  (h_xs_nonzero : ∀ x ∈ set.range xs, x ≠ (0 : β)) (h_eigenvec : ∀ μ : μs, f (xs μ) = (μ : α) • xs μ): 
+  (h_xs_nonzero : ∀ a, xs a ≠ 0) (h_eigenvec : ∀ μ : μs, f (xs μ) = (μ : α) • xs μ): 
   linear_independent α xs := 
 begin
   rw linear_independent_iff,
@@ -167,25 +168,32 @@ begin
   induction h_l_support : l.support using finset.induction with μ₀ l_support' hμ₀ ih generalizing l,
   { exact finsupp.support_eq_empty.1 h_l_support },
   { 
-    let l'_f := (λ μ : (↑(l_support') : set μs), (↑μ - ↑μ₀) * l μ),
-    let l' : μs →₀ α := finsupp.on_finset' l_support' l'_f,
+    let l'_f := (λ μ : μs, (↑μ - ↑μ₀) * l μ),
+    --let l'_f := (λ μ : (↑(l_support') : set μs), (↑μ - ↑μ₀) * l μ),
+    let l' : μs →₀ α := finsupp.on_finset l_support' l'_f sorry,
     have l'_eq_0 : l' = 0,
     { apply ih l', 
       show l'.support = l_support',
       { dsimp only [l'],
         ext a,
-        rw finsupp.on_finset'_mem_support l_support' l'_f a,
+        rw finsupp.on_finset_mem_support l_support' l'_f sorry a,
         by_cases h_cases: a ∈ l_support',
         { refine iff_of_true _ h_cases,
-          rw dif_pos h_cases,
-          dsimp only [l'_f],
+          --rw dif_pos h_cases,
+          --dsimp only [l'_f],
           sorry },
         { refine iff_of_false _ h_cases,
-          rw dif_neg h_cases, 
-          cc } },
-      { 
-    let g := f - smul_id μ₀, 
-    have := congr_arg g hl,
+          sorry } },
+      --show ⇑(finsupp.total ↥μs β α xs) l' = 0,
+      { dsimp only [l'],
+        rw finsupp.total_on_finset l_support' l'_f xs sorry,
+        let g := f - smul_id μ₀, 
+        have := congr_arg g hl,
+        rw linear_map.map_zero at this,
+        rw ←this,
+        rw finsupp.total_apply,
+        unfold finsupp.sum,
+        rw linear_map.map_sum,
     }, },
       
 
