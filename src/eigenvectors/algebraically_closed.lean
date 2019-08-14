@@ -6,6 +6,7 @@ import missing_mathlib.linear_algebra.dimension
 import missing_mathlib.linear_algebra.finsupp
 import missing_mathlib.algebra.group.units
 import missing_mathlib.algebra.ring
+import missing_mathlib.algebra.module
 import missing_mathlib.data.list.basic
 import analysis.complex.polynomial
 import eigenvectors.smul_id
@@ -159,10 +160,6 @@ end
 section
 set_option class.instance_max_depth 50
 
-#check @linear_map.to_fun
-#check @finsupp.total
-
-
 lemma eigenvectors_linear_independent [discrete_field α] [vector_space α β] 
   (f : β →ₗ[α] β) (μs : set α) (xs : μs → β) 
   (h_xs_nonzero : ∀ a, xs a ≠ 0) (h_eigenvec : ∀ μ : μs, f (xs μ) = (μ : α) • xs μ): 
@@ -213,34 +210,52 @@ begin
           ←congr_arg g hl, finsupp.total_apply, finsupp.sum, linear_map.map_sum, h_l_support,
           finset.sum_insert hμ₀, h_gμ₀, zero_add, h_useless_filter],
       simp only [bodies_eq] },
-    have l'_eq_0 : l' = 0,
-    { apply ih l', 
-      show l'.support = l_support',
-      { dsimp only [l'],
-        ext μ,
-        rw finsupp.on_finset_mem_support l_support' l'_f _ μ,
-        by_cases h_cases: μ ∈ l_support',
-        { refine iff_of_true _ h_cases,
-          exact (h_l_support' μ).2 h_cases },
-        { refine iff_of_false _ h_cases,
-          rwa not_iff_not.2 (h_l_support' μ) } },
-      exact total_l' },
-      
+    have h_l'_support_eq : l'.support = l_support',
+    { dsimp only [l'],
+      ext μ,
+      rw finsupp.on_finset_mem_support l_support' l'_f _ μ,
+      by_cases h_cases: μ ∈ l_support',
+      { refine iff_of_true _ h_cases,
+        exact (h_l_support' μ).2 h_cases },
+      { refine iff_of_false _ h_cases,
+        rwa not_iff_not.2 (h_l_support' μ) } },
+    have l'_eq_0 : l' = 0 := ih l' total_l' h_l'_support_eq,
+    
+    have h_mul_eq_0 : ∀ μ : μs, (↑μ - ↑μ₀) * l μ = 0,
+    { intro μ,
+      calc (↑μ - ↑μ₀) * l μ = l' μ : rfl
+      ... = 0 : by { rw [l'_eq_0], refl } },
 
+    have h_lμ_eq_0 : ∀ μ : μs, μ ≠ μ₀ → l μ = 0,
+    { intros μ hμ,
+      apply classical.or_iff_not_imp_left.1 (mul_eq_zero.1 (h_mul_eq_0 μ)),
+      rwa [sub_eq_zero, ←subtype.coe_ext] },
 
-    --let l' : μs →₀ α := finsupp.map l  sorry, 
-     sorry },
-    --have h_finsupp: ∀ (a : μs), a ∈ l_support' ↔ l'.support,
-    --{ sorry },
-  -- have : ∀ μ₀ : μs, l μ₀ = 0,
-  -- { intro μ₀,
-  --   let μs' := (l.support.erase μ₀).val,
-  --   let p_factors := μs'.map (λ μ : μs, X - C (↑μ : α)),
-  --   let p := p_factors.prod,
-  --   let g := eval₂ smul_id f p,
-  --   have := eval₂_prod_noncomm _ algebra.commutes' f p_factors.to_list,
-  -- },
+    have h_sum_l_support'_eq_0 : finset.sum l_support' (λ (μ : ↥μs), l μ • xs μ) = 0,
+    { rw ←finset.sum_const_zero,
+      apply finset.sum_congr rfl,
+      intros μ hμ,
+      rw h_lμ_eq_0,
+      apply zero_smul,
+      intro h,
+      rw h at hμ,
+      contradiction },
+
+    have : l μ₀ = 0,
+    { rw [finsupp.total_apply, finsupp.sum, h_l_support, 
+          finset.sum_insert hμ₀, h_sum_l_support'_eq_0, add_zero] at hl,
+      by_contra h,
+      exact h_xs_nonzero μ₀ ((vector_space.smul_neq_zero (xs μ₀) h).1 hl) },
+
+    show l = 0,
+    { ext μ,
+      by_cases h_cases : μ = μ₀,
+      { rw h_cases, 
+        assumption },
+      exact h_lμ_eq_0 μ h_cases } }
 end
+
+#check  eigenvectors_linear_independent
 end
 
 end eigenvector
