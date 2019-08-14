@@ -195,6 +195,7 @@ le_of_sqr_le_sqr (ip_norm_nonneg _) (add_nonneg (ip_norm_nonneg _) (ip_norm_nonn
 instance has_norm [real_inner_product_space V] :
 has_norm V := { norm := ip_norm }.
 
+--TODO: this was removed in mathlib commit b55e44de0cdd632c2a1c3c21ce05f814ab6f614a. Why?
 lemma normed_space_core : normed_space.core ℝ V := 
 {
   norm_eq_zero_iff := ip_norm_eq_zero_iff,

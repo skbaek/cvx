@@ -1,4 +1,4 @@
-import data.matrix data.real.basic
+import data.matrix.basic data.real.basic
 
 
 universes u v
@@ -29,83 +29,17 @@ begin
   simp [right_distrib, finset.sum_add_distrib] 
 end
 
-@[simp] lemma mul_neg [ring α] (M : matrix m n α) (N : matrix n l α) : M.mul (-N) = - M.mul N :=
-begin 
-  ext i j,
-  unfold matrix.mul,
-  simp,
-end
-
-@[simp] lemma neg_mul [ring α] (M : matrix m n α) (N : matrix n l α) : (-M).mul N = - M.mul N :=
-begin 
-  ext i j,
-  unfold matrix.mul,
-  simp,
-end
-
 lemma mul_sub' [ring α] (L : matrix m n α) (M N : matrix n l α) : L.mul (M - N) = L.mul M - L.mul N :=
 by simp [mul_add']
 
 lemma sub_mul' [ring α] (M N : matrix m n α) (L : matrix n l α) : (M - N).mul L = M.mul L - N.mul L :=
 by simp [add_mul']
 
-@[simp] lemma mul_smul [comm_ring α] (M : matrix m n α) (a : α) (N : matrix n l α) : M.mul (a • N) = a • M.mul N :=
-begin
-  ext i j,
-  unfold matrix.mul,
-  unfold has_scalar.smul,
-  rw finset.mul_sum,
-  congr,
-  ext,
-  ring
-end
-
-@[simp] lemma smul_mul [comm_ring α] (M : matrix m n α) (a : α) (N : matrix n l α) : (a • M).mul N = a • M.mul N :=
-begin
-  ext i j,
-  unfold matrix.mul,
-  unfold has_scalar.smul,
-  rw finset.mul_sum,
-  congr,
-  ext,
-  ring
-end
-
 local postfix `ᵀ` : 1500 := transpose
 
-lemma transpose_transpose (M : matrix m n α) : 
-  Mᵀᵀ = M :=
-by ext; unfold transpose
-
-lemma transpose_mul [comm_ring α] (M : matrix m n α) (N : matrix n l α) : 
-  (M.mul N)ᵀ = Nᵀ.mul Mᵀ  := 
-begin
-  ext i j, 
-  unfold matrix.mul,
-  unfold transpose,
-  congr,
-  ext,
-  ring
-end
-
-lemma transpose_add [has_add α] (M : matrix m n α) (N : matrix m n α) : 
-  (M + N)ᵀ = Mᵀ + Nᵀ  := 
-begin
-  ext i j, 
-  dsimp [transpose], 
-  refl
-end
-
 -- TODO: add to mathlib
-lemma transpose_smul [has_mul α] (a : α) (M : matrix m n α) : 
+lemma transpose_smul [semiring α] (a : α) (M : matrix m n α) : 
   (a • M)ᵀ = a • Mᵀ  := 
-by ext i j; refl
-
-@[simp] lemma transpose_neg [comm_ring α] (M : matrix m n α) : 
-  (- M)ᵀ = - Mᵀ  := 
-by ext i j; refl
-
-@[simp] lemma transpose_zero [has_zero α] : (0 : matrix m n α)ᵀ = 0 := 
 by ext i j; refl
 
 -- TODO: add to mathlib
