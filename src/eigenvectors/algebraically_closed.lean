@@ -1,3 +1,11 @@
+/-
+
+Algebraically closed fields.
+
+We follow Axler's paper "Down with determinants!"
+(https://www.maa.org/sites/default/files/pdf/awards/Axler-Ford-1996.pdf).
+-/
+
 import ring_theory.principal_ideal_domain
 import missing_mathlib.data.polynomial
 import missing_mathlib.data.multiset
@@ -68,7 +76,7 @@ lemma exists_noninjective_factor_of_eval₂_0 {α : Type v} {β : Type w}
   (p : polynomial α) (h_p_ne_0 : p ≠ 0) (h_eval_p : (polynomial.eval₂ smul_id f p) v = 0) : 
   ∃ q ∈ factors p, ¬ function.injective ((polynomial.eval₂ smul_id f q : β →ₗ[α] β) : β → β) :=
 begin
-  rcases (factors_spec p h_p_ne_0).2 with ⟨c, hc⟩,
+  obtain ⟨c, hc⟩ : ∃ c, p * ↑c = multiset.prod (factors p) := (factors_spec p h_p_ne_0).2,
   have smul_id_comm : ∀ (a : α) (b : β →ₗ[α] β), b * smul_id a = smul_id a * b := algebra.commutes',
   rw mul_unit_eq_iff_mul_inv_eq at hc,
   rw [hc,
@@ -120,16 +128,20 @@ open polynomial
 
 section
 set_option class.instance_max_depth 50
+
+/-- Every linear operator on a finite-dimensional complex vector space has
+    an eigenvalue. (Axler's Theorem 2.1.) -/
 lemma exists_eigenvector 
   [algebraically_closed α] [vector_space α β]
   (f : β →ₗ[α] β) (v : β) (hv : v ≠ 0) (h_lin_dep : ¬ linear_independent α (λ n : ℕ, (f ^ n) v)) : 
   ∃ (x : β) (c : α), x ≠ 0 ∧ f x = c • x :=
 begin
-  have := λ h, h_lin_dep ((linear_independent_iff_eval₂ f v).2 h),
-  haveI := classical.dec (∃ (x : polynomial α), ¬((polynomial.eval₂ smul_id f x) v = 0 → x = 0)),
-  rcases not_forall.1 this with ⟨p, hp⟩,
-  rcases not_imp.1 hp with ⟨h_eval_p, h_p_ne_0⟩,
-  rcases exists_noninjective_factor_of_eval₂_0 f v hv p h_p_ne_0 h_eval_p with ⟨q, hq_mem, hq_noninj⟩,
+  haveI := classical.dec (∃ (x : polynomial α), ¬(polynomial.eval₂ smul_id f x v = 0 → x = 0)),
+  obtain ⟨p, hp⟩ : ∃ p, ¬(eval₂ smul_id f p v = 0 → p = 0),
+  { exact not_forall.1 (λ h, h_lin_dep ((linear_independent_iff_eval₂ f v).2 h)) },
+  obtain ⟨h_eval_p, h_p_ne_0⟩ : eval₂ smul_id f p v = 0 ∧ p ≠ 0 := not_imp.1 hp,
+  obtain ⟨q, hq_mem, hq_noninj⟩ : ∃ q ∈ factors p, ¬function.injective ⇑(eval₂ smul_id f q), 
+  { exact exists_noninjective_factor_of_eval₂_0 f v hv p h_p_ne_0 h_eval_p },
   have h_q_ne_0 : q ≠ 0 := ne_0_of_mem_factors h_p_ne_0 hq_mem,
   have h_deg_q : q.degree = 1 := polynomial.degree_eq_one_of_irreducible h_q_ne_0 
     ((factors_spec p h_p_ne_0).1 q hq_mem),
@@ -138,18 +150,18 @@ begin
     simp [eval₂_mul_noncomm smul_id f _ _ algebra.commutes',
         leading_coeff_C_add_X _ _ (λ h, h_q_ne_0 (leading_coeff_eq_zero.1 h))],
     refl },
-  rw [←linear_map.ker_eq_bot, linear_map.ker_eq_bot', classical.not_forall] at hq_noninj,
-  simp only [not_imp] at hq_noninj,
-  rcases hq_noninj with ⟨x, hx₁, hx₂⟩,
-  use x, 
-  use -(coeff q 0 / q.leading_coeff),
-  refine ⟨hx₂, _⟩,
+  obtain ⟨x, hx₁, hx₂⟩ : ∃ (x : β), eval₂ smul_id f q x = 0 ∧ ¬x = 0,
+  { rw [←linear_map.ker_eq_bot, linear_map.ker_eq_bot', classical.not_forall] at hq_noninj,
+    simpa only [not_imp] using hq_noninj },
   have h_fx_x_lin_dep: leading_coeff q • f x + coeff q 0 • x = 0,
   { rw h_q_eval₂ at hx₁,
     dsimp [smul_id] at hx₁,
     exact hx₁ },
-  show f x = -(coeff q 0 / leading_coeff q) • x,
-  { rw neg_smul,
+  show ∃ (x : β) (c : α), x ≠ 0 ∧ f x = c • x,
+  { use x, 
+    use -(coeff q 0 / q.leading_coeff),
+    refine ⟨hx₂, _⟩,
+    rw neg_smul,
     have : (leading_coeff q)⁻¹ • leading_coeff q • f x = (leading_coeff q)⁻¹ • -(coeff q 0 • x) := 
       congr_arg (λ x, (leading_coeff q)⁻¹ • x) (add_eq_zero_iff_eq_neg.1 h_fx_x_lin_dep),
     simpa [smul_smul, inv_mul_cancel (λ h, h_q_ne_0 (leading_coeff_eq_zero.1 h)), 
@@ -160,6 +172,8 @@ end
 section
 set_option class.instance_max_depth 50
 
+/-- Non-zero eigenvectors corresponding to distinct eigenvalues of a linear operator are
+linearly independent (Axler's Proposition 2.2) -/
 lemma eigenvectors_linear_independent [discrete_field α] [vector_space α β] 
   (f : β →ₗ[α] β) (μs : set α) (xs : μs → β) 
   (h_xs_nonzero : ∀ a, xs a ≠ 0) (h_eigenvec : ∀ μ : μs, f (xs μ) = (μ : α) • xs μ): 
