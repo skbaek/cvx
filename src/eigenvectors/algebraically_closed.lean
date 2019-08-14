@@ -159,6 +159,10 @@ end
 section
 set_option class.instance_max_depth 50
 
+#check @linear_map.to_fun
+#check @finsupp.total
+
+
 lemma eigenvectors_linear_independent [discrete_field α] [vector_space α β] 
   (f : β →ₗ[α] β) (μs : set α) (xs : μs → β) 
   (h_xs_nonzero : ∀ a, xs a ≠ 0) (h_eigenvec : ∀ μ : μs, f (xs μ) = (μ : α) • xs μ): 
@@ -190,6 +194,25 @@ begin
         rw [h_l_support, finset.mem_insert] at this,
         cc } },
     let l' : μs →₀ α := finsupp.on_finset l_support' l'_f (λ μ, (h_l_support' μ).1),
+    have total_l' : (@linear_map.to_fun α (finsupp μs α) β _ _ _ (finsupp.module μs α) _ (finsupp.total μs β α xs)) l' = 0,
+    { let g := f - smul_id μ₀, 
+      have h_gμ₀: g (l μ₀ • xs μ₀) = 0, 
+        by rw [linear_map.map_smul, linear_map.sub_apply, h_eigenvec, smul_id_apply, sub_self, smul_zero],
+      have h_useless_filter : finset.filter (λ (a : μs), l'_f a ≠ 0) l_support' = l_support',
+      { convert @finset.filter_congr _ _ _ (classical.dec_pred _) (classical.dec_pred _) _ _,
+        { apply finset.filter_true.symm },
+        exact λ μ hμ, iff_of_true ((h_l_support' μ).2 hμ) true.intro },
+      have bodies_eq : ∀ (μ : μs), l'_f μ • xs μ = g (l μ • xs μ), 
+      { intro μ,
+        dsimp only [g, l'_f],
+        rw [linear_map.map_smul, linear_map.sub_apply, h_eigenvec, smul_id_apply, ←sub_smul, smul_smul],
+        ac_refl },
+      have := finsupp.total_on_finset l_support' l'_f xs _,
+      unfold_coes at this,
+      rw [this, ←linear_map.map_zero g,
+          ←congr_arg g hl, finsupp.total_apply, finsupp.sum, linear_map.map_sum, h_l_support,
+          finset.sum_insert hμ₀, h_gμ₀, zero_add, h_useless_filter],
+      simp only [bodies_eq] },
     have l'_eq_0 : l' = 0,
     { apply ih l', 
       show l'.support = l_support',
@@ -201,23 +224,7 @@ begin
           exact (h_l_support' μ).2 h_cases },
         { refine iff_of_false _ h_cases,
           rwa not_iff_not.2 (h_l_support' μ) } },
-      --show ⇑(finsupp.total ↥μs β α xs) l' = 0,
-      { let g := f - smul_id μ₀, 
-        have h_gμ₀: g (l μ₀ • xs μ₀) = 0, 
-          by rw [linear_map.map_smul, linear_map.sub_apply, h_eigenvec, smul_id_apply, sub_self, smul_zero],
-        have h_useless_filter : finset.filter (λ (a : μs), l'_f a ≠ 0) l_support' = l_support',
-        { convert @finset.filter_congr _ _ _ (classical.dec_pred _) (classical.dec_pred _) _ _,
-          { apply finset.filter_true.symm },
-          exact λ μ hμ, iff_of_true ((h_l_support' μ).2 hμ) true.intro },
-        have bodies_eq : ∀ (μ : μs), l'_f μ • xs μ = g (l μ • xs μ), 
-        { intro μ,
-          dsimp only [g, l'_f],
-          rw [linear_map.map_smul, linear_map.sub_apply, h_eigenvec, smul_id_apply, ←sub_smul, smul_smul],
-          ac_refl },
-        rw [finsupp.total_on_finset l_support' l'_f xs _, ←linear_map.map_zero g,
-            ←congr_arg g hl, finsupp.total_apply, finsupp.sum, linear_map.map_sum, h_l_support,
-            finset.sum_insert hμ₀, h_gμ₀, zero_add, h_useless_filter],
-        simp only [bodies_eq] } },
+      exact total_l' },
       
 
 
