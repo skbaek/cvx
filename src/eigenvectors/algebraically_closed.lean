@@ -169,9 +169,7 @@ begin
   intros l hl,
   induction h_l_support : l.support using finset.induction with μ₀ l_support' hμ₀ ih generalizing l,
   { exact finsupp.support_eq_empty.1 h_l_support },
-  { 
-    let l'_f := (λ μ : μs, (↑μ - ↑μ₀) * l μ),
-    --let l'_f := (λ μ : (↑(l_support') : set μs), (↑μ - ↑μ₀) * l μ),
+  { let l'_f := (λ μ : μs, (↑μ - ↑μ₀) * l μ),
     have h_l_support' : ∀ (μ : μs), l'_f μ ≠ 0 ↔ μ ∈ l_support',
     { intros μ,
       dsimp only [l'_f],
