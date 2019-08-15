@@ -12,7 +12,8 @@ cone (second_order_cone n) :=
 begin
   intros x ha c hc,
   unfold second_order_cone at *,
-  rw [set.mem_set_of_eq, colvec.tail_smul, colvec.head_smul, norm_smul, real.norm_eq_abs, abs_of_nonneg hc],
+  rw [set.mem_set_of_eq, colvec.tail_smul, colvec.head_smul, 
+    norm_smul, real.norm_eq_abs, abs_of_nonneg hc],
   exact mul_le_mul (le_refl c) ha (norm_nonneg _) hc
 end
 

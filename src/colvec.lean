@@ -94,8 +94,8 @@ section instances
 
 variables {α : Type} {n : Type} [fintype n]
 
-instance colvec.has_scalar [has_mul α] : has_scalar α (colvec n α) := matrix.has_scalar
-instance rowvec.has_scalar [has_mul α] : has_scalar α (rowvec n α) := matrix.has_scalar
+instance colvec.has_scalar [semiring α] : has_scalar α (colvec n α) := matrix.has_scalar
+instance rowvec.has_scalar [semiring α] : has_scalar α (rowvec n α) := matrix.has_scalar
 attribute [to_rowvec rowvec.has_scalar] colvec.has_scalar
 
 instance colvec.has_add [has_add α] : has_add (colvec n α) := matrix.has_add
@@ -206,8 +206,10 @@ begin
   apply h.symm
 end
 
-lemma colvec.rel_smul_transpose {α  : Type} [has_mul α] (a : α) : 
-  ((λ (x : rowvec n α) (y : colvec n α), xᵀ = y) ⇒ (λ (x : rowvec n α) (y : colvec n α), xᵀ = y)) (has_scalar.smul a) (has_scalar.smul a) := 
+lemma colvec.rel_smul_transpose {α  : Type} [semiring α] (a : α) : 
+  ((λ (x : rowvec n α) (y : colvec n α), xᵀ = y) ⇒ 
+  (λ (x : rowvec n α) (y : colvec n α), xᵀ = y)) 
+  (has_scalar.smul a) (has_scalar.smul a) := 
 λ _ _ h, by rw [matrix.transpose_smul,h]
 
 lemma relator.rel_mul_const {α  : Type} [has_mul α] (a : α) : 
@@ -291,7 +293,7 @@ variables {α : Type} [linear_ordered_comm_ring α] {m : Type} [fintype m] {n : 
 lemma colvec.inner_self_nonneg : 0 ≤ x.inner x :=
 begin
   dsimp [colvec.inner, colvec, mat, matrix.mul],
-  apply finset.zero_le_sum,
+  apply finset.sum_nonneg,
   intros i _,
   apply mul_self_nonneg
 end
@@ -374,12 +376,12 @@ def colvec.cons (c : α) (x : colvec (fin n) α) : colvec (fin (n+1)) α :=
   colvec.mk (λ i, dite (i.val = 0) (λ_, c) (λhi, x.nth ⟨i.val.pred,nat.pred_lt_pred hi i.2⟩))
 
 @[simp, to_rowvec rowvec.head_smul] 
-lemma colvec.head_smul [has_mul α] (c : α) (x : colvec (fin (n+1)) α) : 
+lemma colvec.head_smul [semiring α] (c : α) (x : colvec (fin (n+1)) α) : 
   (c • x).head = c * x.head :=
 by refl
 
 @[simp, to_rowvec rowvec.tail_smul] 
-lemma colvec.tail_smul [has_mul α] (c : α) (x : colvec (fin (n+1)) α) : 
+lemma colvec.tail_smul [semiring α] (c : α) (x : colvec (fin (n+1)) α) : 
   (c • x).tail = c • x.tail :=
 by refl
 

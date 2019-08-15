@@ -39,7 +39,11 @@ lemma cone_inter (hA: cone A) (hB: cone B) :
 
 lemma cone_Inter {s: ι → set α} (h: ∀ i : ι, cone (s i)) : 
   cone (Inter s) :=
-by unfold cone; finish
+begin
+ intros x hx c hc,
+ rw mem_Inter at hx |-,
+ exact (λ i, h i x (hx i) c hc)
+end
 
 lemma cone_union (hA: cone A) (hB: cone B) : 
   cone (A ∪ B) :=

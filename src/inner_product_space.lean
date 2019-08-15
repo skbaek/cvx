@@ -106,6 +106,9 @@ begin
     rw [h, ip_norm_zero] }
 end
 
+private lemma ip_norm_neg (v : V) : ip_norm (- v) = ip_norm v :=
+by rw [ip_norm, inner_neg_left, inner_neg_right , neg_neg, ip_norm]
+
 private lemma ip_norm_smul (r : ℝ) (v : V) : ip_norm (r • v) = abs r * ip_norm v :=
 begin
   rw [ip_norm, inner_smul_left, inner_smul_right , ←mul_assoc],
@@ -195,19 +198,26 @@ le_of_sqr_le_sqr (ip_norm_nonneg _) (add_nonneg (ip_norm_nonneg _) (ip_norm_nonn
 instance has_norm [real_inner_product_space V] :
 has_norm V := { norm := ip_norm }.
 
---TODO: this was removed in mathlib commit b55e44de0cdd632c2a1c3c21ce05f814ab6f614a. Why?
-lemma normed_space_core : normed_space.core ℝ V := 
+
+lemma normed_group_core : normed_group.core V := 
 {
   norm_eq_zero_iff := ip_norm_eq_zero_iff,
   triangle := ip_norm_triangle,
-  norm_smul := ip_norm_smul
+  norm_neg := ip_norm_neg
 }
 
--- TODO: Should we have a similar setup like "normed_space_core" for inner_product_space?
+instance is_normed_group [real_inner_product_space V] :
+  normed_group V := 
+normed_group.of_core _ normed_group_core
+
+
+-- TODO: Should we have a similar setup like "normed_group_core" for inner_product_space?
 
 instance is_normed_space [real_inner_product_space V] :
   normed_space ℝ V := 
-normed_space.of_core _ _ normed_space_core
+{
+  norm_smul := ip_norm_smul
+}
 
 
 end
@@ -242,7 +252,7 @@ theorem cauchy_schwartz' (u v : V) : ⟪u, v⟫ ≤ ∥ u ∥ * ∥ v ∥ := ip_
 
 theorem eq_proj_on_cauchy_schwartz {u v : V} (H : v ≠ 0) (H₁ : abs ⟪u, v⟫ = ∥ u ∥ * ∥ v ∥) :
   u = proj_on u H :=
-have ∥ v ∥ ≠ 0, from assume H', H ((normed_space_core.norm_eq_zero_iff _).1 H'),
+have ∥ v ∥ ≠ 0, from assume H', H ((normed_group_core.norm_eq_zero_iff _).1 H'),
 have ∥ u ∥ = ∥ proj_on u H ∥, by rw [norm_proj_on_eq, H₁, mul_div_cancel _ this],
 have ∥ u - proj_on u H ∥^2 + ∥ u ∥^2 = 0 + ∥ u ∥^2,
 begin 
@@ -253,7 +263,7 @@ have ∥ u - proj_on u H ∥^2 = 0, from eq_of_add_eq_add_right this,
 show u = proj_on u H,
 begin 
   rw pow_two at this,
-  exact eq_of_sub_eq_zero ((normed_space_core.norm_eq_zero_iff _).1 ((or_self _).1 (mul_eq_zero.1 this)))
+  exact eq_of_sub_eq_zero ((normed_group_core.norm_eq_zero_iff _).1 ((or_self _).1 (mul_eq_zero.1 this)))
 end
 
 
