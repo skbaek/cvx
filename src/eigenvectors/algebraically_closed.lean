@@ -297,11 +297,11 @@ lemma generalized_eigenvector_dim [discrete_field α] [vector_space α β]
   (∃ k : ℕ, generalized_eigenvector f k μ x) ↔ ((f - smul_id μ) ^ n) x = 0 :=
 begin
   split,
-  { intro h_exists_eigenvec,
-    classical,
-    let k := nat.find h_exists_eigenvec,
-    let z := (λ i : fin k, ((f - smul_id μ) ^ ↑i) x),
-    have : linear_independent α z,
+  { show (∃ (k : ℕ), generalized_eigenvector f k μ x) → ((f - smul_id μ) ^ n) x = 0,
+    intro h_exists_eigenvec,
+    let k := @nat.find (λ k : ℕ, generalized_eigenvector f k μ x) (classical.dec_pred _) h_exists_eigenvec,
+    let z := (λ i : fin k, ((f - smul_id μ) ^ (i : ℕ)) x),
+    have h_lin_indep : linear_independent α z,
     { rw linear_independent_iff,
       intros l hl,
       ext i,
@@ -320,7 +320,7 @@ begin
 
       have h_zero_beyond_k : ∀ m, k ≤ m → ((f - smul_id μ) ^ m) x = 0,
       { apply generalized_eigenvector_zero_beyond,
-        apply (nat.find_spec h_exists_eigenvec) },
+        apply (@nat.find_spec (λ k : ℕ, generalized_eigenvector f k μ x) (classical.dec_pred _) h_exists_eigenvec) },
 
       have h_zero_of_gt : ∀ j, j > i → ((f - smul_id μ) ^ (k - i.val - 1)) (l j • z j) = 0,
       { intros j hj,
@@ -362,7 +362,7 @@ begin
         apply this },
       
       have h_pow_k_sub_1 : ((f - smul_id μ) ^ (k - 1)) x ≠ 0 := 
-        nat.find_min h_exists_eigenvec 
+        @nat.find_min (λ k : ℕ, generalized_eigenvector f k μ x) (classical.dec_pred _) h_exists_eigenvec _
             (nat.sub_lt (nat.lt_of_le_of_lt (nat.zero_le _) i.2) nat.zero_lt_one),
       
       contrapose h_pow_k_sub_1 with h_li_ne_0,
@@ -371,8 +371,12 @@ begin
       rw ← vector_space.smul_neq_zero _ h_li_ne_0,
       exact h_l_smul_pow_k_sub_1,
     },
-    sorry },
-  { sorry }
+    apply generalized_eigenvector_zero_beyond 
+        (@nat.find_spec (λ k : ℕ, generalized_eigenvector f k μ x) (classical.dec_pred _) h_exists_eigenvec),
+    rw [←cardinal.nat_cast_le, ←cardinal.lift_mk_fin _, ←h_dim, ←cardinal.lift_le, cardinal.lift_lift],
+    apply h_lin_indep.le_lift_dim },
+  { show ((f - smul_id μ) ^ n) x = 0 → (∃ (k : ℕ), generalized_eigenvector f k μ x),
+    exact λh, ⟨_, h⟩, }
 end
 
 
