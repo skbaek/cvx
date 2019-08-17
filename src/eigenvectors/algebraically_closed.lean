@@ -15,6 +15,7 @@ import missing_mathlib.linear_algebra.finsupp
 import missing_mathlib.algebra.group.units
 import missing_mathlib.algebra.ring
 import missing_mathlib.algebra.module
+import missing_mathlib.algebra.group_power
 import missing_mathlib.data.list.basic
 import analysis.complex.polynomial
 import eigenvectors.smul_id
@@ -117,7 +118,7 @@ end
 
 section eigenvector
 
-variables (α : Type v) (β : Type w) [decidable_eq β] [add_comm_group β]
+variables {α : Type v} {β : Type w} [decidable_eq β] [add_comm_group β]
 
 -- section
 -- set_option class.instance_max_depth 50
@@ -129,7 +130,7 @@ open polynomial
 section
 set_option class.instance_max_depth 50
 
-/-- Every linear operator on a finite-dimensional complex vector space has
+/-- Every linear operator on a vector space over an algebraically closed field has
     an eigenvalue. (Axler's Theorem 2.1.) -/
 lemma exists_eigenvector 
   [algebraically_closed α] [vector_space α β]
@@ -267,7 +268,114 @@ begin
       exact h_lμ_eq_0 μ h_cases } }
 end
 
-#check  eigenvectors_linear_independent
+def generalized_eigenvector [discrete_field α] [vector_space α β] 
+  (f : β →ₗ[α] β) (k : ℕ) (μ : α) (x : β) : Prop := ((f - smul_id μ) ^ k) x = 0
+
+lemma generalized_eigenvector_zero_beyond [discrete_field α] [vector_space α β] 
+  {f : β →ₗ[α] β} {k : ℕ} {μ : α} {x : β} (h : generalized_eigenvector f k μ x) :
+  ∀ m : ℕ, k ≤ m → ((f - smul_id μ) ^ m) x = 0 :=
+begin
+  intros m hm,
+  rw ←pow_eq_pow_sub_mul _ hm,
+  change ((f - smul_id μ) ^ (m - k)) (((f - smul_id μ) ^ k) x) = 0,
+  unfold generalized_eigenvector at h,
+  rw [h, linear_map.map_zero]
+end
+
+lemma exp_ne_zero_of_generalized_eigenvector_ne_zero [discrete_field α] [vector_space α β] 
+  {f : β →ₗ[α] β} {k : ℕ} {μ : α} {x : β} (h : generalized_eigenvector f k μ x) 
+  (hx : x ≠ 0) : k ≠ 0 :=
+begin
+  contrapose hx,
+  rw not_not at hx ⊢,
+  rwa [hx, generalized_eigenvector, pow_zero] at h,
+end
+
+/-- Axler's Lemma 3.1 -/
+lemma generalized_eigenvector_dim [discrete_field α] [vector_space α β] 
+  (f : β →ₗ[α] β) (μ : α) (x : β) (n : ℕ) (h_dim : dim α β = n) (hx : x ≠ 0): 
+  (∃ k : ℕ, generalized_eigenvector f k μ x) ↔ ((f - smul_id μ) ^ n) x = 0 :=
+begin
+  split,
+  { intro h_exists_eigenvec,
+    classical,
+    let k := nat.find h_exists_eigenvec,
+    let z := (λ i : fin k, ((f - smul_id μ) ^ ↑i) x),
+    have : linear_independent α z,
+    { rw linear_independent_iff,
+      intros l hl,
+      ext i,
+      induction h_i_val : i.val using nat.strong_induction_on with i_val ih generalizing i,
+      simp only [h_i_val.symm] at *,
+      clear h_i_val i_val,
+      let g := (f - smul_id μ) ^ (k - i.val - 1),
+      rw [finsupp.total_apply, finsupp.sum] at hl,
+      have := congr_arg g hl,
+      rw [linear_map.map_sum, linear_map.map_zero g] at this,
+      dsimp only [g] at this,
+
+      have h_zero_of_lt : ∀ j, j < i → ((f - smul_id μ) ^ (k - i.val - 1)) (l j • z j) = 0,
+      { intros j hj,
+        simp [ih j hj j rfl] }, 
+
+      have h_zero_beyond_k : ∀ m, k ≤ m → ((f - smul_id μ) ^ m) x = 0,
+      { apply generalized_eigenvector_zero_beyond,
+        apply (nat.find_spec h_exists_eigenvec) },
+
+      have h_zero_of_gt : ∀ j, j > i → ((f - smul_id μ) ^ (k - i.val - 1)) (l j • z j) = 0,
+      { intros j hj,
+        dsimp only [z],
+        rw [linear_map.map_smul],
+        change l j • ((f - smul_id μ) ^ (k - i.val - 1) * ((f - smul_id μ) ^ ↑j)) x = 0,
+        rw [←pow_add, h_zero_beyond_k, smul_zero],
+        rw [nat.sub_sub, ←nat.sub_add_comm (nat.succ_le_of_lt i.2)],
+        apply nat.le_sub_right_of_add_le,
+        apply nat.add_le_add_left,
+        rw ←nat.lt_iff_add_one_le,
+        rw gt_from_lt at hj,
+        unfold_coes,
+        change i.val < (j : ℕ),
+        exact hj }, 
+
+      have h_zero_of_ne : ∀ j, j ≠ i → ((f - smul_id μ) ^ (k - i.val - 1)) (l j • z j) = 0,
+      { intros j hj,
+        cases lt_or_gt_of_ne hj with h_lt h_gt,
+        apply h_zero_of_lt j h_lt,
+        apply h_zero_of_gt j h_gt }, 
+
+      have h_zero_of_not_support : i ∉ l.support → ((f - smul_id μ) ^ (k - i.val - 1)) (l i • z i) = 0,
+      { intros hi,
+        rw [finsupp.mem_support_iff, not_not] at hi,
+        rw [hi, zero_smul, linear_map.map_zero] },
+
+      rw finset.sum_eq_single i (λ j _, h_zero_of_ne j) h_zero_of_not_support at this,
+      simp only [linear_map.map_smul, z] at this,
+      have h_l_smul_pow_k_sub_1 : l i • (((f - smul_id μ) ^ (k - 1)) x) = 0,
+      { have h_k_sub_1 : k - i.val - 1 + i.val = k - 1,
+        { rw ←nat.sub_add_comm,
+          { rw nat.sub_add_cancel, 
+            rw ge_from_le,
+            apply le_of_lt i.2 },
+          { apply nat.le_sub_left_of_add_le,
+            apply nat.succ_le_of_lt i.2 } },
+        rw [←h_k_sub_1, pow_add],
+        apply this },
+      
+      have h_pow_k_sub_1 : ((f - smul_id μ) ^ (k - 1)) x ≠ 0 := 
+        nat.find_min h_exists_eigenvec 
+            (nat.sub_lt (nat.lt_of_le_of_lt (nat.zero_le _) i.2) nat.zero_lt_one),
+      
+      contrapose h_pow_k_sub_1 with h_li_ne_0,
+      
+      rw not_not,
+      rw ← vector_space.smul_neq_zero _ h_li_ne_0,
+      exact h_l_smul_pow_k_sub_1,
+    },
+    sorry },
+  { sorry }
+end
+
+
 end
 
 end eigenvector
