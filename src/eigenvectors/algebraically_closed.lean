@@ -301,6 +301,7 @@ begin
     intro h_exists_eigenvec,
     let k := @nat.find (λ k : ℕ, generalized_eigenvector f k μ x) (classical.dec_pred _) h_exists_eigenvec,
     let z := (λ i : fin k, ((f - smul_id μ) ^ (i : ℕ)) x),
+    
     have h_lin_indep : linear_independent α z,
     { rw linear_independent_iff,
       intros l hl,
@@ -308,11 +309,6 @@ begin
       induction h_i_val : i.val using nat.strong_induction_on with i_val ih generalizing i,
       simp only [h_i_val.symm] at *,
       clear h_i_val i_val,
-      let g := (f - smul_id μ) ^ (k - i.val - 1),
-      rw [finsupp.total_apply, finsupp.sum] at hl,
-      have := congr_arg g hl,
-      rw [linear_map.map_sum, linear_map.map_zero g] at this,
-      dsimp only [g] at this,
 
       have h_zero_of_lt : ∀ j, j < i → ((f - smul_id μ) ^ (k - i.val - 1)) (l j • z j) = 0,
       { intros j hj,
@@ -348,8 +344,6 @@ begin
         rw [finsupp.mem_support_iff, not_not] at hi,
         rw [hi, zero_smul, linear_map.map_zero] },
 
-      rw finset.sum_eq_single i (λ j _, h_zero_of_ne j) h_zero_of_not_support at this,
-      simp only [linear_map.map_smul, z] at this,
       have h_l_smul_pow_k_sub_1 : l i • (((f - smul_id μ) ^ (k - 1)) x) = 0,
       { have h_k_sub_1 : k - i.val - 1 + i.val = k - 1,
         { rw ←nat.sub_add_comm,
@@ -359,22 +353,31 @@ begin
           { apply nat.le_sub_left_of_add_le,
             apply nat.succ_le_of_lt i.2 } },
         rw [←h_k_sub_1, pow_add],
+        let g := (f - smul_id μ) ^ (k - i.val - 1),
+        rw [finsupp.total_apply, finsupp.sum] at hl,
+        have := congr_arg g hl,
+        rw [linear_map.map_sum, linear_map.map_zero g] at this,
+        dsimp only [g] at this,
+        rw finset.sum_eq_single i (λ j _, h_zero_of_ne j) h_zero_of_not_support at this,
+        simp only [linear_map.map_smul, z] at this,
         apply this },
-      
+
       have h_pow_k_sub_1 : ((f - smul_id μ) ^ (k - 1)) x ≠ 0 := 
         @nat.find_min (λ k : ℕ, generalized_eigenvector f k μ x) (classical.dec_pred _) h_exists_eigenvec _
             (nat.sub_lt (nat.lt_of_le_of_lt (nat.zero_le _) i.2) nat.zero_lt_one),
       
-      contrapose h_pow_k_sub_1 with h_li_ne_0,
-      
-      rw not_not,
-      rw ← vector_space.smul_neq_zero _ h_li_ne_0,
-      exact h_l_smul_pow_k_sub_1,
-    },
-    apply generalized_eigenvector_zero_beyond 
+      show l i = 0,
+      { contrapose h_pow_k_sub_1 with h_li_ne_0,
+        rw not_not,
+        rw ← vector_space.smul_neq_zero _ h_li_ne_0,
+        exact h_l_smul_pow_k_sub_1 } },
+
+    show ((f - smul_id μ) ^ n) x = 0,
+    { apply generalized_eigenvector_zero_beyond 
         (@nat.find_spec (λ k : ℕ, generalized_eigenvector f k μ x) (classical.dec_pred _) h_exists_eigenvec),
-    rw [←cardinal.nat_cast_le, ←cardinal.lift_mk_fin _, ←h_dim, ←cardinal.lift_le, cardinal.lift_lift],
-    apply h_lin_indep.le_lift_dim },
+      rw [←cardinal.nat_cast_le, ←cardinal.lift_mk_fin _, ←h_dim, ←cardinal.lift_le, cardinal.lift_lift],
+      apply h_lin_indep.le_lift_dim} },
+
   { show ((f - smul_id μ) ^ n) x = 0 → (∃ (k : ℕ), generalized_eigenvector f k μ x),
     exact λh, ⟨_, h⟩, }
 end
