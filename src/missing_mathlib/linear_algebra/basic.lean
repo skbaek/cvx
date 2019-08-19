@@ -10,6 +10,15 @@ variables [module α β] [module α γ] [module α δ]
 variables (f g : β →ₗ[α] γ)
 include α
 
+
+def restrict
+  (f : β →ₗ[α] γ) (p : submodule α β) (q : submodule α γ) (hf : ∀ x ∈ p, f x ∈ q) : 
+  p →ₗ[α] q :=
+{ to_fun := λ x, ⟨f x, hf x.1 x.2⟩,
+  add := begin intros, apply set_coe.ext, simp end,
+  smul := begin intros, apply set_coe.ext, simp end }
+
+
 -- TODO: replace sum_apply (wrong type classes on δ)
 lemma sum_apply' [decidable_eq ι] (t : finset ι) (f : ι → β →ₗ[α] γ) (b : β) :
   t.sum f b = t.sum (λd, f d b) :=

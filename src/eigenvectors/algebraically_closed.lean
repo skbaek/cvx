@@ -134,9 +134,18 @@ set_option class.instance_max_depth 50
     an eigenvalue. (Axler's Theorem 2.1.) -/
 lemma exists_eigenvector 
   [algebraically_closed α] [vector_space α β]
-  (f : β →ₗ[α] β) (v : β) (hv : v ≠ 0) (h_lin_dep : ¬ linear_independent α (λ n : ℕ, (f ^ n) v)) : 
+  (f : β →ₗ[α] β) (v : β) (hv : v ≠ 0) (n : ℕ) (h_dim : dim α β = n) : 
   ∃ (x : β) (c : α), x ≠ 0 ∧ f x = c • x :=
 begin
+  have h_lin_dep : ¬ linear_independent α (λ n : ℕ, (f ^ n) v),
+  { intro h_lin_indep, 
+    have h_le : cardinal.lift (cardinal.mk ℕ) ≤ cardinal.lift ↑n,
+    { rw ←h_dim,
+      exact linear_independent_le_dim h_lin_indep },
+    have h_lt : cardinal.lift ↑n < cardinal.lift (cardinal.mk ℕ),
+    { have := cardinal.lift_lt.2 (cardinal.nat_lt_omega n),
+      rwa [cardinal.omega, cardinal.lift_lift] at this, },
+      exact lt_irrefl _ (lt_of_le_of_lt h_le h_lt) },
   haveI := classical.dec (∃ (x : polynomial α), ¬(polynomial.eval₂ smul_id f x v = 0 → x = 0)),
   obtain ⟨p, hp⟩ : ∃ p, ¬(eval₂ smul_id f p v = 0 → p = 0),
   { exact not_forall.1 (λ h, h_lin_dep ((linear_independent_iff_eval₂ f v).2 h)) },
@@ -291,7 +300,9 @@ begin
   rwa [hx, generalized_eigenvector, pow_zero] at h,
 end
 
-/-- Axler's Lemma 3.1 -/
+/-- The set of generalized eigenvectors of f corresponding to an eigenvalue μ
+    equals the kernel of (f - smul_id μ) ^ n, where n is the dimension of 
+    the vector space (Axler's Lemma 3.1). -/
 lemma generalized_eigenvector_dim [discrete_field α] [vector_space α β] 
   (f : β →ₗ[α] β) (μ : α) (x : β) (n : ℕ) (h_dim : dim α β = n) (hx : x ≠ 0): 
   (∃ k : ℕ, generalized_eigenvector f k μ x) ↔ ((f - smul_id μ) ^ n) x = 0 :=
@@ -301,7 +312,7 @@ begin
     intro h_exists_eigenvec,
     let k := @nat.find (λ k : ℕ, generalized_eigenvector f k μ x) (classical.dec_pred _) h_exists_eigenvec,
     let z := (λ i : fin k, ((f - smul_id μ) ^ (i : ℕ)) x),
-    
+
     have h_lin_indep : linear_independent α z,
     { rw linear_independent_iff,
       intros l hl,
@@ -382,6 +393,24 @@ begin
     exact λh, ⟨_, h⟩, }
 end
 
+
+
+lemma generalized_eigenvector_span_aux [discrete_field α] [vector_space α β] 
+  (f : β →ₗ[α] β) (n : ℕ) (p : submodule α β) (h_dim : dim α p = n) : 
+  p ≤ submodule.span α {x | ∃ k μ, generalized_eigenvector f k μ x} :=
+begin
+  induction n generalizing p,
+  { rw submodule.bot_of_dim_zero p h_dim,
+    exact lattice.bot_le },
+  { obtain ⟨ x⟩ : _ := exists_eigenvector f sorry,
+    let g := (f - smul_id μ₀) ^ n }
+end
+
+/-- The generalized eigenvectors of f span the vectorspace β. (Axler's Proposition 3.4). -/
+lemma generalized_eigenvector_span [discrete_field α] [vector_space α β] 
+  (f : β →ₗ[α] β) (n : ℕ) (h_dim : dim α β = n) : 
+  submodule.span α {x | ∃ k μ, generalized_eigenvector f k μ x} = ⊤ :=
+lattice.top_le_iff.1 (generalized_eigenvector_span_aux f n ⊤ (by rwa dim_top))
 
 end
 
