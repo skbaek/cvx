@@ -404,6 +404,78 @@ begin
     exact λh, ⟨_, h⟩, }
 end
 
+-- TODO: replace "change" by some other tactic?
+section
+set_option class.instance_max_depth 70
+lemma generalized_eigenvector_restrict_aux [discrete_field α] [vector_space α β] 
+  (f : β →ₗ[α] β) (p : submodule α β) (k : ℕ) (μ : α) (x : p) (hfp : ∀ (x : β), x ∈ p → f x ∈ p) : 
+  (((f.restrict p p hfp - smul_id μ) ^ k) x : β) = ((f - smul_id μ) ^ k) x :=
+begin
+  induction k with k ih,
+  { rw [pow_zero, pow_zero, linear_map.one_app, linear_map.one_app] },
+  { rw [pow_succ, pow_succ], 
+    change ((f.restrict p p hfp - smul_id μ) (((f.restrict p p hfp - smul_id μ) ^ k) x) : β) =
+        (f - smul_id μ) (((f - smul_id μ) ^ k) x),
+    rw [linear_map.sub_apply, linear_map.sub_apply, linear_map.restrict_apply, ←ih], 
+    refl }
+end
+end
+
+lemma generalized_eigenvector_restrict [discrete_field α] [vector_space α β] 
+  (f : β →ₗ[α] β) (p : submodule α β) (k : ℕ) (μ : α) (x : p) (hfp : ∀ (x : β), x ∈ p → f x ∈ p) : 
+  generalized_eigenvector (linear_map.restrict f p p hfp) k μ x 
+    ↔ generalized_eigenvector f k μ x :=
+by { rw [generalized_eigenvector, subtype.coe_ext, generalized_eigenvector_restrict_aux], refl }
+
+lemma ss {α β : Type*} (p : β → Prop) (f : α → β) : 
+{x : α | p (f x)}.image f ⊆ {x : β | p x} := by library_search
+-- begin
+--   ext,
+--   rw [set.mem_image, set.mem_set_of_eq],
+--   split,
+--   { intro h,
+--     use f x,},
+--   {}
+-- end
+
+/-- The generalized eigenvectors of f span the vectorspace β. (Axler's Proposition 3.4). -/
+lemma generalized_eigenvector_span [discrete_field α] [vector_space α β] 
+  (f : β →ₗ[α] β) (n : ℕ) (h_dim : dim α β = n) : 
+  submodule.span α {x | ∃ k μ, generalized_eigenvector f k μ x} = ⊤ :=
+begin
+  rw ←lattice.top_le_iff,
+  tactic.unfreeze_local_instances,
+  induction n using nat.strong_induction_on with n ih generalizing β,
+  cases n,
+  { sorry },
+  { have h_dim_gt_0 : dim α β > 0, sorry,
+    obtain ⟨x, μ₀, hx_ne_0, hμ₀⟩ : ∃ (x : β) (μ₀ : α), x ≠ 0 ∧ f x = μ₀ • x,
+    sorry,
+    let V₁ := ((f - smul_id μ₀) ^ n.succ).ker,
+    let V₂ := ((f - smul_id μ₀) ^ n.succ).range,
+    have h_disjoint : disjoint V₁ V₂, sorry,
+    have h_dim_add : dim α V₂ + dim α V₁ = dim α β, sorry,
+    obtain ⟨n', h_n'_eq, h_n'_lt⟩ : ∃ n' : ℕ, dim α V₂ = n' ∧ n' < n.succ, sorry,
+    have : V₂ ≤ submodule.span α ({x : β | ∃ (k : ℕ) (μ : α), generalized_eigenvector f k μ x} ∩ V₂),
+    { rw ←subtype.image_preimage_val,
+      rw ←submodule.subtype_eq_val V₂,
+      rw submodule.span_image (submodule.subtype V₂),
+      rw set.preimage_set_of_eq,
+      rw submodule.subtype_eq_val,
+      have h₀ : ∀ p, submodule.map (submodule.subtype V₂) ⊤ 
+            ≤ submodule.map (submodule.subtype V₂) p 
+            ↔ ⊤ ≤ p
+          := λ _, (linear_map.map_le_map_iff (submodule.ker_subtype V₂)),
+      have := submodule.range_subtype V₂,
+      unfold linear_map.range at this,
+      rw this at h₀,
+      rw h₀,
+      have := ih n' h_n'_lt (f.restrict V₂ V₂ sorry) h_n'_eq,
+      simp only [generalized_eigenvector_restrict] at this,
+      apply this }
+    }
+end
+
 section
 set_option class.instance_max_depth 100
 -- TODO: submodule.induct???
@@ -411,7 +483,8 @@ lemma generalized_eigenvector_span_aux [algebraically_closed α] [vector_space �
   (f : β →ₗ[α] β) (n : ℕ) (p : submodule α β) (hfp : ∀ x ∈ p, f x ∈ p) (h_dim : dim α p = n) : 
   p ≤ submodule.span α {x | ∃ k μ, generalized_eigenvector f k μ x} :=
 begin
-  induction n using nat.strong_induction_on with n ih generalizing p,
+  tactic.unfreeze_local_instances,
+  induction n using nat.strong_induction_on with n ih generalizing p β,
   cases n,
   { rw submodule.bot_of_dim_zero p h_dim,
     exact lattice.bot_le },
@@ -425,15 +498,15 @@ begin
     { obtain ⟨x, hx_mem, hx_ne_0⟩ : ∃ (x : β), x ∈ p ∧ x ≠ 0 := 
         exists_mem_ne_zero_of_dim_pos h_dim_gt_0,
       exact exists_eigenvector f' ⟨x,hx_mem⟩ (λ h, hx_ne_0 (subtype.ext.1 h)) _ h_dim },
-    let V₁ := ((f' - smul_id μ₀) ^ n.succ).ker,
-    let V₂ := ((f' - smul_id μ₀) ^ n.succ).range,
+    let V₁ := ((f - smul_id μ₀) ^ n.succ).ker,
+    let V₂ := ((f - smul_id μ₀) ^ n.succ).range,
     have h_disjoint : disjoint V₁ V₂,
     { intros v hv,
       rw [submodule.mem_coe, submodule.mem_inf] at hv,
       obtain ⟨u, hu⟩ : ∃ u, ((f' - smul_id μ₀) ^ n.succ) u = v := linear_map.mem_range.1 hv.2,
       have v_eq_0 : v = 0,
       { rw ← hu,
-        apply (generalized_eigenvector_dim f' μ₀ u _ h_dim).1,
+        have := (generalized_eigenvector_dim f' μ₀ u _ h_dim).1,
         use n.succ + n.succ,
         rw [generalized_eigenvector, pow_add],
         change ((f' - smul_id μ₀) ^ nat.succ n) (((f' - smul_id μ₀) ^ nat.succ n) u) = 0,
@@ -449,7 +522,7 @@ begin
       intro h,
       rw submodule.bot_of_dim_zero V₁ h at h_x_mem_V₁,
       exact hx_ne_0 ((submodule.mem_bot _).1 h_x_mem_V₁) },
-    obtain ⟨n', hn'⟩ : ∃ n', dim α V₂ = n' ∧ n' < n.succ,
+    obtain ⟨n', h_n'_eq, h_n'_lt⟩ : ∃ n' : ℕ, dim α V₂ = n' ∧ n' < n.succ,
     -- { have : dim α ↥V₁ ≤ n.succ ∧ dim α ↥V₂ ≤ n.succ,
     --   { rw [←h_dim, ←h_dim_add],
     --     exact ⟨cardinal.le_add_left _ _, cardinal.le_add_right _ _⟩ },
@@ -465,14 +538,13 @@ begin
     --   { apply nat.pos_of_ne_zero, 
     --     rw h_dim_V₁ at h_dim_V₁_ne_0,
     --     exact λ h, h_dim_V₁_ne_0 (cardinal.nat_cast_inj.2 h) },
-    --   show ∃ (n' : cardinal), dim α ↥V₂ = n' ∧ n' < ↑(nat.succ n),
+    --   show ∃ (n' : ℕ), dim α ↥V₂ = ↑n' ∧ n' < nat.succ n,
     --   { refine ⟨dim_V₂, h_dim_V₂, _⟩,
-    --     rw cardinal.nat_cast_lt,
     --     rw ←add_lt_add_iff_right dim_V₁,
     --     rw h_dim_add',
     --     apply nat.lt_add_of_pos_right h_dim_V₁_pos } }, 
     sorry,
-    
+    have := ih n' h_n'_lt,
         
         
         },
