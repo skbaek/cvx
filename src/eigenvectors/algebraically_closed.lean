@@ -450,22 +450,32 @@ begin
       rw submodule.bot_of_dim_zero V₁ h at h_x_mem_V₁,
       exact hx_ne_0 ((submodule.mem_bot _).1 h_x_mem_V₁) },
     obtain ⟨n', hn'⟩ : ∃ n', dim α V₂ = n' ∧ n' < n.succ,
-    { have : dim α ↥V₁ ≤ n.succ ∧ dim α ↥V₂ ≤ n.succ,
-      { rw [←h_dim, ←h_dim_add],
-        exact ⟨cardinal.le_add_left _ _, cardinal.le_add_right _ _⟩ },
-      obtain ⟨dim_V₁, h_dim_V₁⟩ : ∃ (n : ℕ), dim α ↥V₁ = ↑n,
-      { exact cardinal.lt_omega.1 (lt_of_le_of_lt this.1 (cardinal.nat_lt_omega _)) },
-      obtain ⟨dim_V₂, h_dim_V₂⟩ : ∃ (n : ℕ), dim α ↥V₂ = ↑n,
-      { exact cardinal.lt_omega.1 (lt_of_le_of_lt this.2 (cardinal.nat_lt_omega _)) },
-      have h_dim_add' : dim_V₂ + dim_V₁ = n.succ,
-      { rw [h_dim, h_dim_V₁, h_dim_V₂] at h_dim_add,
-        norm_cast at h_dim_add,
-        rwa cardinal.nat_cast_inj at h_dim_add },--TODO: use norm_cast  
-      refine ⟨dim_V₂, h_dim_V₂, _⟩,
-      rw cardinal.nat_cast_lt,
-      have := nat.lt_add_of_pos_right,
-      have := nat.add_lt_add_iff_right,
-     }, },
+    -- { have : dim α ↥V₁ ≤ n.succ ∧ dim α ↥V₂ ≤ n.succ,
+    --   { rw [←h_dim, ←h_dim_add],
+    --     exact ⟨cardinal.le_add_left _ _, cardinal.le_add_right _ _⟩ },
+    --   obtain ⟨dim_V₁, h_dim_V₁⟩ : ∃ (n : ℕ), dim α ↥V₁ = ↑n,
+    --   { exact cardinal.lt_omega.1 (lt_of_le_of_lt this.1 (cardinal.nat_lt_omega _)) },
+    --   obtain ⟨dim_V₂, h_dim_V₂⟩ : ∃ (n : ℕ), dim α ↥V₂ = ↑n,
+    --   { exact cardinal.lt_omega.1 (lt_of_le_of_lt this.2 (cardinal.nat_lt_omega _)) },
+    --   have h_dim_add' : dim_V₂ + dim_V₁ = n.succ,
+    --   { rw [h_dim, h_dim_V₁, h_dim_V₂] at h_dim_add,
+    --     norm_cast at h_dim_add,
+    --     rwa cardinal.nat_cast_inj at h_dim_add },--TODO: use norm_cast  
+    --   have h_dim_V₁_pos : dim_V₁ > 0,
+    --   { apply nat.pos_of_ne_zero, 
+    --     rw h_dim_V₁ at h_dim_V₁_ne_0,
+    --     exact λ h, h_dim_V₁_ne_0 (cardinal.nat_cast_inj.2 h) },
+    --   show ∃ (n' : cardinal), dim α ↥V₂ = n' ∧ n' < ↑(nat.succ n),
+    --   { refine ⟨dim_V₂, h_dim_V₂, _⟩,
+    --     rw cardinal.nat_cast_lt,
+    --     rw ←add_lt_add_iff_right dim_V₁,
+    --     rw h_dim_add',
+    --     apply nat.lt_add_of_pos_right h_dim_V₁_pos } }, 
+    sorry,
+    
+        
+        
+        },
 end
 end
 
