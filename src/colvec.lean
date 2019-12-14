@@ -240,7 +240,7 @@ lemma colvec.rel_forall_transpose : (((λ (x : rowvec n α) (y : colvec n α), x
 by apply relator.rel_forall_of_total
 
 meta def colvec.transfer : tactic unit := 
-transfer [
+tactic.transfer [
   `relator.rel_eq_zero_transpose,
   `relator.rel_eq_zero,
   `relator.rel_eq_same, 

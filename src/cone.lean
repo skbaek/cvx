@@ -121,7 +121,7 @@ lemma cone_dual_cone : cone (dual_cone A) :=
 begin
   intros x ha c hc z hz,
   rw inner_smul_right,
-  apply zero_le_mul hc,
+  apply mul_nonneg' hc,
   exact ha _ hz
 end
 

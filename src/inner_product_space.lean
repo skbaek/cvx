@@ -284,7 +284,8 @@ instance real :
 @[simp] lemma real.ring_add (x y : ℝ) : ring.add x y = x + y := rfl
 @[simp] lemma real.no_zero_divisors_mul (x y : ℝ) : no_zero_divisors.mul x y = x * y := rfl
 
-set_option pp.notation false
+section
+set_option class.instance_max_depth 50
 instance prod {V : Type*} [real_inner_product_space V] {W : Type*} [real_inner_product_space W]:
   real_inner_product_space (V × W):= 
 {
@@ -313,6 +314,6 @@ instance prod {V : Type*} [real_inner_product_space V] {W : Type*} [real_inner_p
       { apply eq_zero_of_inner_self_eq_zero hx.2 }
     end
 }
-
+end
 
 end real_inner_product_space
