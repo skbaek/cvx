@@ -16,7 +16,7 @@ open vector_space
 lemma submodule.bot_of_dim_zero (p : submodule α β) (h_dim : dim α p = 0) : p = ⊥ :=
 begin
   haveI : decidable_eq β := classical.dec_eq β,
-  obtain ⟨b, hb⟩ : ∃b : set p, is_basis α (λ i : b, i.val) := @exists_is_basis α p _ _ _ _ _,
+  obtain ⟨b, hb⟩ : ∃b : set p, is_basis α (λ i : b, i.val) := @exists_is_basis α p _ _ _,
   rw lattice.eq_bot_iff,
   intros x hx,
   have : (⟨x, (submodule.mem_coe p).1 hx⟩ : p) = (0 : p), 
@@ -46,7 +46,7 @@ calc
 
 lemma linear_independent_le_dim {α : Type u} {β : Type v} {ι : Type w}
   [discrete_field α] [decidable_eq β] [add_comm_group β] [vector_space α β] [decidable_eq ι]
-  {v : ι → β} (hv : @linear_independent _ α _ v _ _ _ (@comm_ring.to_ring _ (field.to_comm_ring _)) _ _) : 
+  {v : ι → β} (hv : @linear_independent _ α _ v (@comm_ring.to_ring _ (field.to_comm_ring _)) _ _) : 
   cardinal.lift.{w v} (cardinal.mk ι) ≤ cardinal.lift.{v w} (dim α β) :=
 calc
   cardinal.lift.{w v} (cardinal.mk ι) = cardinal.lift.{v w} (cardinal.mk (set.range v)) : 

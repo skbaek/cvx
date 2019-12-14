@@ -316,7 +316,7 @@ end
     the vector space (Axler's Lemma 3.1). -/
 lemma generalized_eigenvector_dim [discrete_field α] [vector_space α β] 
   (f : β →ₗ[α] β) (μ : α) (x : β) (n : ℕ) (h_dim : dim α β = n): 
-  (∃ k : ℕ, generalized_eigenvector f k μ x) ↔ ((f - smul_id μ) ^ n) x = 0 :=
+  (∃ k : ℕ, generalized_eigenvector f k μ x) ↔ generalized_eigenvector f n μ x :=
 begin
   split,
   { show (∃ (k : ℕ), generalized_eigenvector f k μ x) → ((f - smul_id μ) ^ n) x = 0,
@@ -404,12 +404,18 @@ begin
     exact λh, ⟨_, h⟩, }
 end
 
+#check @linear_map.restrict
+
 -- TODO: replace "change" by some other tactic?
+section
+
 section
 set_option class.instance_max_depth 70
 lemma generalized_eigenvector_restrict_aux [discrete_field α] [vector_space α β] 
-  (f : β →ₗ[α] β) (p : submodule α β) (k : ℕ) (μ : α) (x : p) (hfp : ∀ (x : β), x ∈ p → f x ∈ p) : 
-  (((f.restrict p p hfp - smul_id μ) ^ k) x : β) = ((f - smul_id μ) ^ k) x :=
+  (f : β →ₗ[α] β) (p : submodule α β) (k : ℕ) (μ : α) (x : p) 
+  (hfp : ∀ (x : β), x ∈ p → f x ∈ p) : 
+  (((f.restrict p p hfp - smul_id μ) ^ k) x : β) 
+  = ((f - smul_id μ) ^ k) x :=
 begin
   induction k with k ih,
   { rw [pow_zero, pow_zero, linear_map.one_app, linear_map.one_app] },
@@ -427,8 +433,7 @@ lemma generalized_eigenvector_restrict [discrete_field α] [vector_space α β]
     ↔ generalized_eigenvector f k μ x :=
 by { rw [generalized_eigenvector, subtype.coe_ext, generalized_eigenvector_restrict_aux], refl }
 
-lemma ss {α β : Type*} (p : β → Prop) (f : α → β) : 
-{x : α | p (f x)}.image f ⊆ {x : β | p x} := by library_search
+#check set.image_preimage_subset 
 -- begin
 --   ext,
 --   rw [set.mem_image, set.mem_set_of_eq],
@@ -437,6 +442,31 @@ lemma ss {α β : Type*} (p : β → Prop) (f : α → β) :
 --     use f x,},
 --   {}
 -- end
+
+lemma generalized_eigenvector_dim_of_any
+  [discrete_field α] [vector_space α β] 
+  {f : β →ₗ[α] β} {μ : α} {n : ℕ} (h_dim : dim α β = n) 
+  {m : ℕ} {x : β} (h : generalized_eigenvector f m μ x) :
+  generalized_eigenvector f n μ x :=
+begin
+  rw ←generalized_eigenvector_dim,
+  { exact ⟨m, h⟩ },
+  { exact h_dim }
+end
+
+lemma generalized_eigenvec_disjoint_ker_range 
+  [discrete_field α] [vector_space α β] 
+  (f : β →ₗ[α] β) (n : ℕ) (μ : α) (h_dim : dim α β = n) : 
+  disjoint ((f - smul_id μ) ^ n).ker ((f - smul_id μ) ^ n).range :=
+begin
+  rintros v ⟨hv, ⟨u, _, hu⟩⟩,
+  have h2n : ((f - smul_id μ) ^ (n + n)) u = 0,
+  { rw [pow_add, ←linear_map.mem_ker.1 hv, ←hu], refl },
+  have hn : ((f - smul_id μ) ^ n) u = 0, 
+  { apply generalized_eigenvector_dim_of_any h_dim h2n },
+  have hv0 : v = 0, by rw [←hn, hu],
+  show v ∈ ↑⊥, by simp [hv0]
+end
 
 /-- The generalized eigenvectors of f span the vectorspace β. (Axler's Proposition 3.4). -/
 lemma generalized_eigenvector_span [discrete_field α] [vector_space α β] 
@@ -453,27 +483,38 @@ begin
     sorry,
     let V₁ := ((f - smul_id μ₀) ^ n.succ).ker,
     let V₂ := ((f - smul_id μ₀) ^ n.succ).range,
-    have h_disjoint : disjoint V₁ V₂, sorry,
+    have h_disjoint : disjoint V₁ V₂, 
+    { apply generalized_eigenvec_disjoint_ker_range _ _ _ h_dim },
     have h_dim_add : dim α V₂ + dim α V₁ = dim α β, sorry,
     obtain ⟨n', h_n'_eq, h_n'_lt⟩ : ∃ n' : ℕ, dim α V₂ = n' ∧ n' < n.succ, sorry,
-    have : V₂ ≤ submodule.span α ({x : β | ∃ (k : ℕ) (μ : α), generalized_eigenvector f k μ x} ∩ V₂),
-    { rw ←subtype.image_preimage_val,
-      rw ←submodule.subtype_eq_val V₂,
-      rw submodule.span_image (submodule.subtype V₂),
-      rw set.preimage_set_of_eq,
-      rw submodule.subtype_eq_val,
-      have h₀ : ∀ p, submodule.map (submodule.subtype V₂) ⊤ 
-            ≤ submodule.map (submodule.subtype V₂) p 
-            ↔ ⊤ ≤ p
-          := λ _, (linear_map.map_le_map_iff (submodule.ker_subtype V₂)),
-      have := submodule.range_subtype V₂,
-      unfold linear_map.range at this,
-      rw this at h₀,
-      rw h₀,
-      have := ih n' h_n'_lt (f.restrict V₂ V₂ sorry) h_n'_eq,
-      simp only [generalized_eigenvector_restrict] at this,
-      apply this }
-    }
+    have : V₂ ≤ submodule.span α ({x : β | ∃ (k : ℕ) (μ : α), generalized_eigenvector f k μ x}),
+    -- { have : V₂ ≤ submodule.span α ({x : β | ∃ (k : ℕ) (μ : α), generalized_eigenvector f k μ x} ∩ V₂),
+    --   { rw ←subtype.image_preimage_val,
+    --     rw ←submodule.subtype_eq_val V₂,
+    --     rw submodule.span_image (submodule.subtype V₂),
+    --     rw set.preimage_set_of_eq,
+    --     rw submodule.subtype_eq_val,
+    --     have h₀ : ∀ p, submodule.map (submodule.subtype V₂) ⊤ 
+    --           ≤ submodule.map (submodule.subtype V₂) p 
+    --           ↔ ⊤ ≤ p
+    --         := λ _, (linear_map.map_le_map_iff (submodule.ker_subtype V₂)),
+    --     have := submodule.range_subtype V₂,
+    --     unfold linear_map.range at this,
+    --     rw this at h₀,
+    --     rw h₀,
+    --     have := ih n' h_n'_lt (f.restrict V₂ V₂ sorry) h_n'_eq,
+    --     simp only [generalized_eigenvector_restrict] at this,
+    --     apply this },
+    --   refine le_trans this _,
+    --   apply submodule.span_mono,
+    --   apply set.inter_subset_left }, 
+  sorry,
+  have : V₁ ≤ submodule.span α ({x : β | ∃ (k : ℕ) (μ : α), generalized_eigenvector f k μ x}),
+  sorry,
+  
+  }
+    
+    
 end
 
 section
