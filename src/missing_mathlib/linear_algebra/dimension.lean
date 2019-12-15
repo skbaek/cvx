@@ -65,4 +65,15 @@ begin
   apply linear_independent_le_dim hw
 end
 
+lemma exists_mem_ne_zero_of_dim_pos' {α : Type v} {β : Type w} 
+  [discrete_field α] [add_comm_group β] [vector_space α β] 
+  (h_dim : 0 < dim α β) : ∃ x : β, x ≠ 0 :=
+begin
+  obtain ⟨b, _, _⟩ : (∃ b : β, b ∈ (⊤ : submodule α β) ∧ b ≠ 0),
+  { apply exists_mem_ne_zero_of_dim_pos, 
+    rw dim_top,
+    apply h_dim },
+  use b
+end
+
 end vector_space

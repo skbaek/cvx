@@ -135,9 +135,10 @@ set_option class.instance_max_depth 50
     an eigenvalue. (Axler's Theorem 2.1.) -/
 lemma exists_eigenvector 
   [algebraically_closed α] [vector_space α β]
-  (f : β →ₗ[α] β) (v : β) (hv : v ≠ 0) (n : ℕ) (h_dim : dim α β = n) : 
+  (f : β →ₗ[α] β) (hex : ∃ v : β, v ≠ 0) (n : ℕ) (h_dim : dim α β = n) : 
   ∃ (x : β) (c : α), x ≠ 0 ∧ f x = c • x :=
 begin
+  obtain ⟨v, hv⟩ : ∃ v : β, v ≠ 0 := hex,
   have h_lin_dep : ¬ linear_independent α (λ n : ℕ, (f ^ n) v),
   { intro h_lin_indep, 
     have h_le : cardinal.lift (cardinal.mk ℕ) ≤ cardinal.lift ↑n,
@@ -469,7 +470,7 @@ begin
 end
 
 /-- The generalized eigenvectors of f span the vectorspace β. (Axler's Proposition 3.4). -/
-lemma generalized_eigenvector_span [discrete_field α] [vector_space α β] 
+lemma generalized_eigenvector_span [algebraically_closed α] [vector_space α β] 
   (f : β →ₗ[α] β) (n : ℕ) (h_dim : dim α β = n) : 
   submodule.span α {x | ∃ k μ, generalized_eigenvector f k μ x} = ⊤ :=
 begin
@@ -477,16 +478,25 @@ begin
   tactic.unfreeze_local_instances,
   induction n using nat.strong_induction_on with n ih generalizing β,
   cases n,
-  { sorry },
-  { have h_dim_gt_0 : dim α β > 0, sorry,
+  { rw [submodule.bot_of_dim_zero ⊤],
+    { simp },
+    { rw [dim_top, h_dim],
+      refl } },
+  { have h_dim_pos : 0 < dim α β,
+    { rw [h_dim, ←cardinal.nat_succ, cardinal.lt_succ],
+      apply cardinal.zero_le },
     obtain ⟨x, μ₀, hx_ne_0, hμ₀⟩ : ∃ (x : β) (μ₀ : α), x ≠ 0 ∧ f x = μ₀ • x,
-    sorry,
+    { apply exists_eigenvector f 
+        (exists_mem_ne_zero_of_dim_pos' h_dim_pos)
+        _ h_dim },
     let V₁ := ((f - smul_id μ₀) ^ n.succ).ker,
     let V₂ := ((f - smul_id μ₀) ^ n.succ).range,
     have h_disjoint : disjoint V₁ V₂, 
     { apply generalized_eigenvec_disjoint_ker_range _ _ _ h_dim },
-    have h_dim_add : dim α V₂ + dim α V₁ = dim α β, sorry,
-    obtain ⟨n', h_n'_eq, h_n'_lt⟩ : ∃ n' : ℕ, dim α V₂ = n' ∧ n' < n.succ, sorry,
+    have h_dim_add : dim α V₂ + dim α V₁ = dim α β,
+    { apply dim_range_add_dim_ker },
+    obtain ⟨n', h_n'_eq, h_n'_lt⟩ : ∃ n' : ℕ, dim α V₂ = n' ∧ n' < n.succ,
+    { rw h_dim at h_dim_add, },
     have : V₂ ≤ submodule.span α ({x : β | ∃ (k : ℕ) (μ : α), generalized_eigenvector f k μ x}),
     -- { have : V₂ ≤ submodule.span α ({x : β | ∃ (k : ℕ) (μ : α), generalized_eigenvector f k μ x} ∩ V₂),
     --   { rw ←subtype.image_preimage_val,
