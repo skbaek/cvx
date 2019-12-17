@@ -481,23 +481,6 @@ begin
   exact congr_arg subtype.val h,
 end
 
--- TODO : move
-lemma cardinal.exists_nat_of_add_eq_nat {a b : cardinal} {n : ℕ} (h : a + b = n) :
-  ∃ k l : ℕ, a = k ∧ b = l :=
-begin
-  rcases (@cardinal.lt_omega a).1 _ with ⟨k, hk⟩,
-  rcases (@cardinal.lt_omega b).1 _ with ⟨l, hl⟩,
-  { use k,
-    use l,
-    cc },
-  { refine ((@cardinal.add_lt_omega_iff a b).1 _).2,
-    rw h,
-    apply cardinal.nat_lt_omega },
-  { refine ((@cardinal.add_lt_omega_iff a b).1 _).1,
-    rw h,
-    apply cardinal.nat_lt_omega },
-end
-
 /-- The generalized eigenvectors of f span the vectorspace β. (Axler's Proposition 3.4). -/
 lemma generalized_eigenvector_span [algebraically_closed α] [vector_space α β] 
   (f : β →ₗ[α] β) (n : ℕ) (h_dim : dim α β = n) : 
