@@ -76,4 +76,17 @@ begin
   use b
 end
 
+lemma dim_pos_of_mem_ne_zero {α : Type v} {β : Type w} 
+  [discrete_field α] [add_comm_group β] [vector_space α β] 
+  (x : β) (h : x ≠ 0) : 0 < dim α β :=
+begin
+  classical,
+  by_contra hc,
+  rw [not_lt, cardinal.le_zero, ←dim_top] at hc,
+  have x_mem_bot : x ∈ ⊥,
+  { rw ← submodule.bot_of_dim_zero ⊤ hc, 
+    apply mem_top },
+  exact h ((mem_bot α).1 x_mem_bot)
+end
+
 end vector_space

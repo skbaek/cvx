@@ -469,6 +469,35 @@ begin
   show v ∈ ↑⊥, by simp [hv0]
 end
 
+lemma pos_dim_eigenker_of_nonzero_eigenvec [algebraically_closed α] [vector_space α β] 
+  {f : β →ₗ[α] β} {n : ℕ} {μ : α} {x : β} (hx : x ≠ 0) (hfx : f x = μ • x) : 
+  0 < dim α ((f - smul_id μ) ^ n.succ).ker :=
+begin
+  have x_mem : x ∈ ((f - smul_id μ) ^ n.succ).ker,
+  { simp [pow_succ', hfx, smul_id_apply] },
+  apply dim_pos_of_mem_ne_zero (⟨x, x_mem⟩ : ((f - smul_id μ) ^ n.succ).ker),
+  intros h,
+  apply hx,
+  exact congr_arg subtype.val h,
+end
+
+-- TODO : move
+lemma cardinal.exists_nat_of_add_eq_nat {a b : cardinal} {n : ℕ} (h : a + b = n) :
+  ∃ k l : ℕ, a = k ∧ b = l :=
+begin
+  rcases (@cardinal.lt_omega a).1 _ with ⟨k, hk⟩,
+  rcases (@cardinal.lt_omega b).1 _ with ⟨l, hl⟩,
+  { use k,
+    use l,
+    cc },
+  { refine ((@cardinal.add_lt_omega_iff a b).1 _).2,
+    rw h,
+    apply cardinal.nat_lt_omega },
+  { refine ((@cardinal.add_lt_omega_iff a b).1 _).1,
+    rw h,
+    apply cardinal.nat_lt_omega },
+end
+
 /-- The generalized eigenvectors of f span the vectorspace β. (Axler's Proposition 3.4). -/
 lemma generalized_eigenvector_span [algebraically_closed α] [vector_space α β] 
   (f : β →ₗ[α] β) (n : ℕ) (h_dim : dim α β = n) : 
@@ -495,8 +524,16 @@ begin
     { apply generalized_eigenvec_disjoint_ker_range _ _ _ h_dim },
     have h_dim_add : dim α V₂ + dim α V₁ = dim α β,
     { apply dim_range_add_dim_ker },
+    have h_dim_V₁_pos : 0 < dim α V₁,
+    { apply pos_dim_eigenker_of_nonzero_eigenvec hx_ne_0 hμ₀ },
     obtain ⟨n', h_n'_eq, h_n'_lt⟩ : ∃ n' : ℕ, dim α V₂ = n' ∧ n' < n.succ,
-    { rw h_dim at h_dim_add, },
+    { rw h_dim at h_dim_add,
+      rcases cardinal.exists_nat_of_add_eq_nat h_dim_add with ⟨n₂, n₁, hn₂, hn₁⟩,
+      refine ⟨n₂, hn₂, _⟩,
+      rw [hn₁, hn₂, ←cardinal.nat_add, cardinal.nat_cast_inj] at h_dim_add,
+      rw h_dim_add.symm,
+      rw [hn₁] at h_dim_V₁_pos,
+      simp [(@cardinal.nat_cast_lt 0 n₁).1 h_dim_V₁_pos] },
     have : V₂ ≤ submodule.span α ({x : β | ∃ (k : ℕ) (μ : α), generalized_eigenvector f k μ x}),
     -- { have : V₂ ≤ submodule.span α ({x : β | ∃ (k : ℕ) (μ : α), generalized_eigenvector f k μ x} ∩ V₂),
     --   { rw ←subtype.image_preimage_val,
@@ -517,8 +554,8 @@ begin
     --     apply this },
     --   refine le_trans this _,
     --   apply submodule.span_mono,
-    --   apply set.inter_subset_left }, 
-  sorry,
+    --   apply set.inter_subset_left },
+    sorry,
   have : V₁ ≤ submodule.span α ({x : β | ∃ (k : ℕ) (μ : α), generalized_eigenvector f k μ x}),
   sorry,
   
