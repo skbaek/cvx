@@ -26,6 +26,10 @@ is_ring_hom (smul_id : α → β →ₗ[α] β) := {
   map_mul := smul_id.is_semiring_hom.map_mul
 }
 
+-- TODO: merge with this?
+#check module.endomorphism_algebra 
+#check algebra_map
+
 instance : algebra α (β →ₗ[α] β) := 
 { to_fun := smul_id,
   commutes' := 

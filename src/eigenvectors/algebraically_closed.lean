@@ -19,6 +19,7 @@ import missing_mathlib.algebra.module
 import missing_mathlib.algebra.group_power
 import missing_mathlib.data.list.basic
 import missing_mathlib.set_theory.cardinal
+import missing_mathlib.ring_theory.algebra
 import analysis.complex.polynomial
 import eigenvectors.smul_id
 
@@ -128,27 +129,25 @@ variables {α : Type v} {β : Type w} [decidable_eq β] [add_comm_group β]
 -- end
 
 open polynomial
+open finite_dimensional
 
 section
 set_option class.instance_max_depth 50
 
 /-- Every linear operator on a vector space over an algebraically closed field has
     an eigenvalue. (Axler's Theorem 2.1.) -/
+-- TODO: use findim
 lemma exists_eigenvector 
-  [algebraically_closed α] [vector_space α β]
-  (f : β →ₗ[α] β) (hex : ∃ v : β, v ≠ 0) (n : ℕ) (h_dim : dim α β = n) : 
+  [algebraically_closed α] [vector_space α β] [finite_dimensional α β]
+  (f : β →ₗ[α] β) (hex : ∃ v : β, v ≠ 0) : 
   ∃ (x : β) (c : α), x ≠ 0 ∧ f x = c • x :=
 begin
   obtain ⟨v, hv⟩ : ∃ v : β, v ≠ 0 := hex,
   have h_lin_dep : ¬ linear_independent α (λ n : ℕ, (f ^ n) v),
   { intro h_lin_indep, 
-    have h_le : cardinal.lift (cardinal.mk ℕ) ≤ cardinal.lift ↑n,
-    { rw ←h_dim,
-      exact linear_independent_le_dim h_lin_indep },
-    have h_lt : cardinal.lift ↑n < cardinal.lift (cardinal.mk ℕ),
-    { have := cardinal.lift_lt.2 (cardinal.nat_lt_omega n),
-      rwa [cardinal.omega, cardinal.lift_lift] at this, },
-      exact lt_irrefl _ (lt_of_le_of_lt h_le h_lt) },
+    have := cardinal.lift_lt.2 (lt_omega_of_linear_independent h_lin_indep),
+    rw [cardinal.omega, cardinal.lift_lift] at this,
+    apply lt_irrefl _ this },
   haveI := classical.dec (∃ (x : polynomial α), ¬(polynomial.eval₂ smul_id f x v = 0 → x = 0)),
   obtain ⟨p, hp⟩ : ∃ p, ¬(eval₂ smul_id f p v = 0 → p = 0),
   { exact not_forall.1 (λ h, h_lin_dep ((linear_independent_iff_eval₂ f v).2 h)) },
@@ -316,12 +315,14 @@ end
 /-- The set of generalized eigenvectors of f corresponding to an eigenvalue μ
     equals the kernel of (f - smul_id μ) ^ n, where n is the dimension of 
     the vector space (Axler's Lemma 3.1). -/
-lemma generalized_eigenvector_dim [discrete_field α] [vector_space α β] 
-  (f : β →ₗ[α] β) (μ : α) (x : β) (n : ℕ) (h_dim : dim α β = n): 
-  (∃ k : ℕ, generalized_eigenvector f k μ x) ↔ generalized_eigenvector f n μ x :=
+lemma generalized_eigenvector_dim 
+  [discrete_field α] [vector_space α β] [finite_dimensional α β]
+  (f : β →ₗ[α] β) (μ : α) (x : β) : 
+  (∃ k : ℕ, generalized_eigenvector f k μ x) 
+    ↔ generalized_eigenvector f (findim α β) μ x :=
 begin
   split,
-  { show (∃ (k : ℕ), generalized_eigenvector f k μ x) → ((f - smul_id μ) ^ n) x = 0,
+  { show (∃ (k : ℕ), generalized_eigenvector f k μ x) → ((f - smul_id μ) ^ findim α β) x = 0,
     intro h_exists_eigenvec,
     let k := @nat.find (λ k : ℕ, generalized_eigenvector f k μ x) (classical.dec_pred _) h_exists_eigenvec,
     let z := (λ i : fin k, ((f - smul_id μ) ^ (i : ℕ)) x),
@@ -396,17 +397,18 @@ begin
         rw ← vector_space.smul_neq_zero _ h_li_ne_0,
         exact h_l_smul_pow_k_sub_1 } },
 
-    show ((f - smul_id μ) ^ n) x = 0,
+    show ((f - smul_id μ) ^ findim α β) x = 0,
     { apply generalized_eigenvector_zero_beyond 
         (@nat.find_spec (λ k : ℕ, generalized_eigenvector f k μ x) (classical.dec_pred _) h_exists_eigenvec),
-      rw [←cardinal.nat_cast_le, ←cardinal.lift_mk_fin _, ←h_dim, ←cardinal.lift_le, cardinal.lift_lift],
-      apply h_lin_indep.le_lift_dim} },
+      rw [←cardinal.nat_cast_le, ←cardinal.lift_mk_fin _, ←cardinal.lift_le, cardinal.lift_lift],
+      rw findim_eq_dim,
+      apply h_lin_indep.le_lift_dim} }, -- TODO: shorten this?
 
-  { show ((f - smul_id μ) ^ n) x = 0 → (∃ (k : ℕ), generalized_eigenvector f k μ x),
+  { show ((f - smul_id μ) ^ findim α β) x = 0 → (∃ (k : ℕ), generalized_eigenvector f k μ x),
     exact λh, ⟨_, h⟩, }
 end
 
-#check @linear_map.restrict
+#check linear_independent.le_lift_dim
 
 -- TODO: replace "change" by some other tactic?
 section
@@ -446,26 +448,25 @@ by { rw [generalized_eigenvector, subtype.coe_ext, generalized_eigenvector_restr
 -- end
 
 lemma generalized_eigenvector_dim_of_any
-  [discrete_field α] [vector_space α β] 
-  {f : β →ₗ[α] β} {μ : α} {n : ℕ} (h_dim : dim α β = n) 
+  [discrete_field α] [vector_space α β] [finite_dimensional α β]
+  {f : β →ₗ[α] β} {μ : α}
   {m : ℕ} {x : β} (h : generalized_eigenvector f m μ x) :
-  generalized_eigenvector f n μ x :=
+  generalized_eigenvector f (findim α β) μ x :=
 begin
   rw ←generalized_eigenvector_dim,
-  { exact ⟨m, h⟩ },
-  { exact h_dim }
+  { exact ⟨m, h⟩ }
 end
 
-lemma generalized_eigenvec_disjoint_ker_range 
-  [discrete_field α] [vector_space α β] 
-  (f : β →ₗ[α] β) (n : ℕ) (μ : α) (h_dim : dim α β = n) : 
-  disjoint ((f - smul_id μ) ^ n).ker ((f - smul_id μ) ^ n).range :=
+lemma generalized_eigenvec_disjoint_range_ker
+  [discrete_field α] [vector_space α β] [finite_dimensional α β]
+  (f : β →ₗ[α] β) (μ : α) : 
+  disjoint ((f - smul_id μ) ^ findim α β).range ((f - smul_id μ) ^ findim α β).ker :=
 begin
-  rintros v ⟨hv, ⟨u, _, hu⟩⟩,
-  have h2n : ((f - smul_id μ) ^ (n + n)) u = 0,
+  rintros v ⟨⟨u, _, hu⟩, hv⟩,
+  have h2n : ((f - smul_id μ) ^ (findim α β + findim α β)) u = 0,
   { rw [pow_add, ←linear_map.mem_ker.1 hv, ←hu], refl },
-  have hn : ((f - smul_id μ) ^ n) u = 0, 
-  { apply generalized_eigenvector_dim_of_any h_dim h2n },
+  have hn : ((f - smul_id μ) ^ findim α β) u = 0, 
+  { apply generalized_eigenvector_dim_of_any h2n },
   have hv0 : v = 0, by rw [←hn, hu],
   show v ∈ ↑⊥, by simp [hv0]
 end
@@ -482,167 +483,103 @@ begin
   exact congr_arg subtype.val h,
 end
 
+lemma pos_findim_eigenker_of_nonzero_eigenvec 
+  [algebraically_closed α] [vector_space α β] [finite_dimensional α β]
+  {f : β →ₗ[α] β} {n : ℕ} {μ : α} {x : β} (hx : x ≠ 0) (hfx : f x = μ • x) : 
+  0 < findim α ((f - smul_id μ) ^ n.succ).ker :=
+begin
+  apply cardinal.nat_cast_lt.1,
+  rw findim_eq_dim,
+  apply pos_dim_eigenker_of_nonzero_eigenvec hx hfx,
+end
+
 lemma eigenker_le_span_gen_eigenvec [discrete_field α] [vector_space α β] 
   (f : β →ₗ[α] β) (μ₀ : α) (n : ℕ) :
 ((f - smul_id μ₀) ^ n).ker 
   ≤ submodule.span α ({x : β | ∃ (k : ℕ) (μ : α), generalized_eigenvector f k μ x}) :=
 begin
- intros x hx,
- rw submodule.mem_coe at *,
- apply submodule.subset_span,
- exact ⟨n, μ₀, linear_map.mem_ker.1 hx⟩
+  intros x hx,
+  rw submodule.mem_coe at *,
+  apply submodule.subset_span,
+  exact ⟨n, μ₀, linear_map.mem_ker.1 hx⟩
 end
 
-#check finite_dimensional.eq_top_of_disjoint
---TODO: change to findim
+lemma image_mem_eigenrange_of_mem_eigenrange [discrete_field α] [vector_space α β] 
+  {f : β →ₗ[α] β} {μ : α} {x : β} {n : ℕ}
+  (hx : x ∈ ((f - smul_id μ) ^ n).range) : 
+  f x ∈ ((f - smul_id μ) ^ n).range :=
+begin
+  rw linear_map.mem_range at *,
+  rcases hx with ⟨w, hw⟩,
+  use f w,
+  have hcommutes : f.comp ((f - smul_id μ) ^ n) = ((f - smul_id μ) ^ n).comp f := 
+    algebra.mul_sub_algebra_map_pow_commutes f μ n,
+    -- TODO: use algebra_map instead of smul_id
+  rw [←linear_map.comp_apply, ←hcommutes, linear_map.comp_apply, hw],
+end
 
 /-- The generalized eigenvectors of f span the vectorspace β. (Axler's Proposition 3.4). -/
-lemma generalized_eigenvector_span [algebraically_closed α] [vector_space α β] 
-  (f : β →ₗ[α] β) (n : ℕ) (h_dim : dim α β = n) : 
+lemma generalized_eigenvector_span 
+  [algebraically_closed α] [vector_space α β] [finite_dimensional α β]
+  (f : β →ₗ[α] β) : 
   submodule.span α {x | ∃ k μ, generalized_eigenvector f k μ x} = ⊤ :=
 begin
   rw ←lattice.top_le_iff,
   tactic.unfreeze_local_instances,
-  induction n using nat.strong_induction_on with n ih generalizing β,
+  induction h_dim : findim α β using nat.strong_induction_on with n ih generalizing β,
   cases n,
-  { rw [submodule.bot_of_dim_zero ⊤],
+  { rw [bot_of_findim_zero ⊤],
     { simp },
-    { rw [dim_top, h_dim],
-      refl } },
-  { have h_dim_pos : 0 < dim α β,
-    { rw [h_dim, ←cardinal.nat_succ, cardinal.lt_succ],
-      apply cardinal.zero_le },
+    { rw [findim_top, h_dim] },
+    { apply_instance } },
+  { have h_dim_pos : 0 < findim α β,
+    { rw [h_dim],
+      apply nat.zero_lt_succ },
     obtain ⟨x, μ₀, hx_ne_0, hμ₀⟩ : ∃ (x : β) (μ₀ : α), x ≠ 0 ∧ f x = μ₀ • x,
     { apply exists_eigenvector f 
-        (exists_mem_ne_zero_of_dim_pos' h_dim_pos)
-        _ h_dim },
+        (exists_mem_ne_zero_of_findim_pos h_dim_pos) },
     let V₁ := ((f - smul_id μ₀) ^ n.succ).ker,
     let V₂ := ((f - smul_id μ₀) ^ n.succ).range,
-    have h_disjoint : disjoint V₁ V₂, 
-    { apply generalized_eigenvec_disjoint_ker_range _ _ _ h_dim },
-    have h_dim_add : dim α V₂ + dim α V₁ = dim α β,
-    { apply dim_range_add_dim_ker },
-    have h_dim_V₁_pos : 0 < dim α V₁,
-    { apply pos_dim_eigenker_of_nonzero_eigenvec hx_ne_0 hμ₀ },
-    obtain ⟨n', h_n'_eq, h_n'_lt⟩ : ∃ n' : ℕ, dim α V₂ = n' ∧ n' < n.succ,
-    { rw h_dim at h_dim_add,
-      rcases cardinal.exists_nat_of_add_eq_nat h_dim_add with ⟨n₂, n₁, hn₂, hn₁⟩,
-      refine ⟨n₂, hn₂, _⟩,
-      rw [hn₁, hn₂, ←cardinal.nat_add, cardinal.nat_cast_inj] at h_dim_add,
-      rw h_dim_add.symm,
-      rw [hn₁] at h_dim_V₁_pos,
-      simp [(@cardinal.nat_cast_lt 0 n₁).1 h_dim_V₁_pos] },
-    have : V₂ ≤ submodule.span α ({x : β | ∃ (k : ℕ) (μ : α), generalized_eigenvector f k μ x}),
-    -- { have : V₂ ≤ submodule.span α ({x : β | ∃ (k : ℕ) (μ : α), generalized_eigenvector f k μ x} ∩ V₂),
-    --   { rw ←subtype.image_preimage_val,
-    --     rw ←submodule.subtype_eq_val V₂,
-    --     rw submodule.span_image (submodule.subtype V₂),
-    --     rw set.preimage_set_of_eq,
-    --     rw submodule.subtype_eq_val,
-    --     have h₀ : ∀ p, submodule.map (submodule.subtype V₂) ⊤ 
-    --           ≤ submodule.map (submodule.subtype V₂) p 
-    --           ↔ ⊤ ≤ p
-    --         := λ _, (linear_map.map_le_map_iff (submodule.ker_subtype V₂)),
-    --     have := submodule.range_subtype V₂,
-    --     unfold linear_map.range at this,
-    --     rw this at h₀,
-    --     rw h₀,
-    --     have := ih n' h_n'_lt (f.restrict V₂ V₂ sorry) h_n'_eq,
-    --     simp only [generalized_eigenvector_restrict] at this,
-    --     apply this },
-    --   refine le_trans this _,
-    --   apply submodule.span_mono,
-    --   apply set.inter_subset_left },
-    sorry,
-  have : V₁ ≤ submodule.span α ({x : β | ∃ (k : ℕ) (μ : α), generalized_eigenvector f k μ x}),
+    have h_disjoint : disjoint V₂ V₁,
+    { simp only [V₁, V₂, h_dim.symm],
+      exact generalized_eigenvec_disjoint_range_ker f μ₀ },
+    have h_dim_add : findim α V₂ + findim α V₁ = findim α β,
+    { apply linear_map.findim_range_add_findim_ker },
+    have h_dim_V₁_pos : 0 < findim α V₁,
+    { apply pos_findim_eigenker_of_nonzero_eigenvec hx_ne_0 hμ₀ },
+    have h_findim_V₂ : findim α V₂ < n.succ := by linarith,
+    have h_f_V₂ : ∀ (x : β), x ∈ V₂ → f x ∈ V₂, 
+    { intros x hx, 
+      apply image_mem_eigenrange_of_mem_eigenrange hx, },
+    have hV₂ : V₂ ≤ submodule.span α ({x : β | ∃ (k : ℕ) (μ : α), generalized_eigenvector f k μ x}),
+    { have : V₂ ≤ submodule.span α ({x : β | ∃ (k : ℕ) (μ : α), generalized_eigenvector f k μ x} ∩ V₂),
+      { rw ←subtype.image_preimage_val,
+        rw ←submodule.subtype_eq_val V₂,
+        rw submodule.span_image (submodule.subtype V₂),
+        rw set.preimage_set_of_eq,
+        rw submodule.subtype_eq_val,
+        have h₀ : ∀ p, submodule.map (submodule.subtype V₂) ⊤ 
+              ≤ submodule.map (submodule.subtype V₂) p 
+              ↔ ⊤ ≤ p
+            := λ _, (linear_map.map_le_map_iff (submodule.ker_subtype V₂)),
+        have := submodule.range_subtype V₂,
+        unfold linear_map.range at this,
+        rw this at h₀,
+        rw h₀,
+        have := ih (findim α V₂) h_findim_V₂ (f.restrict V₂ V₂ h_f_V₂) rfl,
+        simp only [generalized_eigenvector_restrict] at this,
+        apply this },
+      refine le_trans this _,
+      apply submodule.span_mono,
+      apply set.inter_subset_left },
+  have hV₁ : V₁ ≤ submodule.span α ({x : β | ∃ (k : ℕ) (μ : α), generalized_eigenvector f k μ x}),
   { apply eigenker_le_span_gen_eigenvec },
-  sorry,
-  
-  }
-    
-    
+  show ⊤ ≤ submodule.span α {x : β | ∃ (k : ℕ) (μ : α), generalized_eigenvector f k μ x},
+  { rw ←finite_dimensional.eq_top_of_disjoint V₂ V₁ h_dim_add h_disjoint,
+    apply lattice.sup_le hV₂ hV₁ } }
 end
 
-section
-set_option class.instance_max_depth 100
--- TODO: submodule.induct???
-lemma generalized_eigenvector_span_aux [algebraically_closed α] [vector_space α β] 
-  (f : β →ₗ[α] β) (n : ℕ) (p : submodule α β) (hfp : ∀ x ∈ p, f x ∈ p) (h_dim : dim α p = n) : 
-  p ≤ submodule.span α {x | ∃ k μ, generalized_eigenvector f k μ x} :=
-begin
-  tactic.unfreeze_local_instances,
-  induction n using nat.strong_induction_on with n ih generalizing p β,
-  cases n,
-  { rw submodule.bot_of_dim_zero p h_dim,
-    exact lattice.bot_le },
-  { have h_dim_gt_0 : dim α ↥p > 0,
-    { rw h_dim, 
-      rw gt_from_lt,
-      change ((0 : ℕ) : cardinal) < (nat.succ n : cardinal),
-      apply cardinal.nat_cast_lt.2 (nat.zero_lt_succ _) },
-    let f' := (f.restrict p p hfp),
-    obtain ⟨x, μ₀, hx_ne_0, hμ₀⟩ : ∃ (x : p) (μ₀ : α), x ≠ 0 ∧ f' x = μ₀ • x,
-    { obtain ⟨x, hx_mem, hx_ne_0⟩ : ∃ (x : β), x ∈ p ∧ x ≠ 0 := 
-        exists_mem_ne_zero_of_dim_pos h_dim_gt_0,
-      exact exists_eigenvector f' ⟨x,hx_mem⟩ (λ h, hx_ne_0 (subtype.ext.1 h)) _ h_dim },
-    let V₁ := ((f - smul_id μ₀) ^ n.succ).ker,
-    let V₂ := ((f - smul_id μ₀) ^ n.succ).range,
-    have h_disjoint : disjoint V₁ V₂,
-    { intros v hv,
-      rw [submodule.mem_coe, submodule.mem_inf] at hv,
-      obtain ⟨u, hu⟩ : ∃ u, ((f' - smul_id μ₀) ^ n.succ) u = v := linear_map.mem_range.1 hv.2,
-      have v_eq_0 : v = 0,
-      { rw ← hu,
-        have := (generalized_eigenvector_dim f' μ₀ u _ h_dim).1,
-        use n.succ + n.succ,
-        rw [generalized_eigenvector, pow_add],
-        change ((f' - smul_id μ₀) ^ nat.succ n) (((f' - smul_id μ₀) ^ nat.succ n) u) = 0,
-        rw [hu, linear_map.mem_ker.1 hv.1] },
-      rw [v_eq_0, submodule.mem_coe],
-      apply submodule.zero_mem },
-    have h_dim_add : dim α V₂ + dim α V₁ = dim α p,
-    { exact dim_range_add_dim_ker ((f' - smul_id μ₀) ^ n.succ) },
-    have h_dim_V₁_ne_0 : dim α V₁ ≠ 0,
-    { have h_x_mem_V₁ : x ∈ V₁,
-      { rw linear_map.mem_ker,
-        exact generalized_eigenvector_of_eigenvector hμ₀ (nat.succ_pos n) },
-      intro h,
-      rw submodule.bot_of_dim_zero V₁ h at h_x_mem_V₁,
-      exact hx_ne_0 ((submodule.mem_bot _).1 h_x_mem_V₁) },
-    obtain ⟨n', h_n'_eq, h_n'_lt⟩ : ∃ n' : ℕ, dim α V₂ = n' ∧ n' < n.succ,
-    -- { have : dim α ↥V₁ ≤ n.succ ∧ dim α ↥V₂ ≤ n.succ,
-    --   { rw [←h_dim, ←h_dim_add],
-    --     exact ⟨cardinal.le_add_left _ _, cardinal.le_add_right _ _⟩ },
-    --   obtain ⟨dim_V₁, h_dim_V₁⟩ : ∃ (n : ℕ), dim α ↥V₁ = ↑n,
-    --   { exact cardinal.lt_omega.1 (lt_of_le_of_lt this.1 (cardinal.nat_lt_omega _)) },
-    --   obtain ⟨dim_V₂, h_dim_V₂⟩ : ∃ (n : ℕ), dim α ↥V₂ = ↑n,
-    --   { exact cardinal.lt_omega.1 (lt_of_le_of_lt this.2 (cardinal.nat_lt_omega _)) },
-    --   have h_dim_add' : dim_V₂ + dim_V₁ = n.succ,
-    --   { rw [h_dim, h_dim_V₁, h_dim_V₂] at h_dim_add,
-    --     norm_cast at h_dim_add,
-    --     rwa cardinal.nat_cast_inj at h_dim_add },--TODO: use norm_cast  
-    --   have h_dim_V₁_pos : dim_V₁ > 0,
-    --   { apply nat.pos_of_ne_zero, 
-    --     rw h_dim_V₁ at h_dim_V₁_ne_0,
-    --     exact λ h, h_dim_V₁_ne_0 (cardinal.nat_cast_inj.2 h) },
-    --   show ∃ (n' : ℕ), dim α ↥V₂ = ↑n' ∧ n' < nat.succ n,
-    --   { refine ⟨dim_V₂, h_dim_V₂, _⟩,
-    --     rw ←add_lt_add_iff_right dim_V₁,
-    --     rw h_dim_add',
-    --     apply nat.lt_add_of_pos_right h_dim_V₁_pos } }, 
-    sorry,
-    have := ih n' h_n'_lt,
-        
-        
-        },
 end
-end
-
-/-- The generalized eigenvectors of f span the vectorspace β. (Axler's Proposition 3.4). -/
-lemma generalized_eigenvector_span [discrete_field α] [vector_space α β] 
-  (f : β →ₗ[α] β) (n : ℕ) (h_dim : dim α β = n) : 
-  submodule.span α {x | ∃ k μ, generalized_eigenvector f k μ x} = ⊤ :=
-lattice.top_le_iff.1 (generalized_eigenvector_span_aux f n ⊤ (by rwa dim_top))
 
 end
 
