@@ -11,6 +11,7 @@ import missing_mathlib.data.polynomial
 import missing_mathlib.data.multiset
 import missing_mathlib.data.finsupp
 import missing_mathlib.linear_algebra.dimension
+import missing_mathlib.linear_algebra.finite_dimensional
 import missing_mathlib.linear_algebra.finsupp
 import missing_mathlib.algebra.group.units
 import missing_mathlib.algebra.ring
@@ -481,6 +482,20 @@ begin
   exact congr_arg subtype.val h,
 end
 
+lemma eigenker_le_span_gen_eigenvec [discrete_field α] [vector_space α β] 
+  (f : β →ₗ[α] β) (μ₀ : α) (n : ℕ) :
+((f - smul_id μ₀) ^ n).ker 
+  ≤ submodule.span α ({x : β | ∃ (k : ℕ) (μ : α), generalized_eigenvector f k μ x}) :=
+begin
+ intros x hx,
+ rw submodule.mem_coe at *,
+ apply submodule.subset_span,
+ exact ⟨n, μ₀, linear_map.mem_ker.1 hx⟩
+end
+
+#check finite_dimensional.eq_top_of_disjoint
+--TODO: change to findim
+
 /-- The generalized eigenvectors of f span the vectorspace β. (Axler's Proposition 3.4). -/
 lemma generalized_eigenvector_span [algebraically_closed α] [vector_space α β] 
   (f : β →ₗ[α] β) (n : ℕ) (h_dim : dim α β = n) : 
@@ -540,6 +555,7 @@ begin
     --   apply set.inter_subset_left },
     sorry,
   have : V₁ ≤ submodule.span α ({x : β | ∃ (k : ℕ) (μ : α), generalized_eigenvector f k μ x}),
+  { apply eigenker_le_span_gen_eigenvec },
   sorry,
   
   }
