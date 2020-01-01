@@ -1,4 +1,5 @@
 import analysis.normed_space.real_inner_product
+import missing_mathlib.linear_algebra.basic
 
 noncomputable theory
 open_locale classical
@@ -112,6 +113,20 @@ lemma adjoint_smul (c : ℝ) (F : V →ₗ[ℝ] V) (h : ∃ G, has_adjoint F G) 
   (c • F).adjoint = c • F.adjoint := 
 adjoint_of_has_adjoint (has_adjoint_smul c (has_adjoint_adjoint h))
 
+lemma adjoint_neg (F : V →ₗ[ℝ] V) (h : ∃ G, has_adjoint F G) : 
+  (- F).adjoint = - F.adjoint := 
+adjoint_of_has_adjoint (has_adjoint_neg (has_adjoint_adjoint h))
+
+lemma adjoint_add (F G : V →ₗ[ℝ] V) 
+  (hF : ∃ F', has_adjoint F F') (hG : ∃ G', has_adjoint G G'): 
+  (F + G).adjoint = F.adjoint + G.adjoint := 
+adjoint_of_has_adjoint (has_adjoint_add (has_adjoint_adjoint hF) (has_adjoint_adjoint hG))
+
+lemma adjoint_sub (F G : V →ₗ[ℝ] V) 
+  (hF : ∃ F', has_adjoint F F') (hG : ∃ G', has_adjoint G G'): 
+  (F - G).adjoint = F.adjoint - G.adjoint := 
+adjoint_of_has_adjoint (has_adjoint_sub (has_adjoint_adjoint hF) (has_adjoint_adjoint hG))
+
 def normal (F : V →ₗ[ℝ] V) : Prop := 
 ∃ G, has_adjoint F G ∧ F.comp G = G.comp F
 
@@ -159,6 +174,23 @@ begin
   rcases h with ⟨G, hG_adjoint, hG_comm⟩,
   refine ⟨c • G, ⟨has_adjoint_smul c hG_adjoint, _⟩⟩,
   simp only [comp_smul, smul_comp, hG_comm]
+end
+
+lemma normal_neg_of_normal {F : V →ₗ[ℝ] V} (h : normal F) :
+  normal (- F) :=
+begin
+  rw ← neg_one_smul _ F,
+  apply normal_smul_of_normal (-1) h,
+end
+
+lemma normal_sub_algebra_map_of_normal
+  {F G : V →ₗ[ℝ] V} (c : ℝ) (hF : normal F) :
+  normal (F - algebra_map _ c) :=
+begin
+  rcases hF with ⟨G, hG_adjoint, hG_comm⟩,
+  refine ⟨G - algebra_map _ c, ⟨has_adjoint_sub hG_adjoint (has_adjoint_smul c has_adjoint_id), _⟩⟩,
+  simp only [comp_eq_mul] at *,
+  simp [add_mul, mul_add, hG_comm, algebra.commutes]
 end
 
 lemma inner_adjoint_eq_inner_of_normal {F : V →ₗ[ℝ] V} (h : normal F) : 

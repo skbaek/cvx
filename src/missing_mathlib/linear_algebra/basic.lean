@@ -10,6 +10,8 @@ variables [module α β] [module α γ] [module α δ]
 variables (f g : β →ₗ[α] γ)
 include α
 
+lemma comp_eq_mul (f g : β →ₗ[α] β) : f.comp g = f * g := rfl
+
 def restrict
   (f : β →ₗ[α] γ) (p : submodule α β) (q : submodule α γ) (hf : ∀ x ∈ p, f x ∈ q) : 
   p →ₗ[α] q :=
