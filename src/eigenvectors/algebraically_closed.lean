@@ -136,7 +136,6 @@ set_option class.instance_max_depth 50
 
 /-- Every linear operator on a vector space over an algebraically closed field has
     an eigenvalue. (Axler's Theorem 2.1.) -/
--- TODO: use findim
 lemma exists_eigenvector 
   [algebraically_closed α] [vector_space α β] [finite_dimensional α β]
   (f : β →ₗ[α] β) (hex : ∃ v : β, v ≠ 0) : 
