@@ -1,5 +1,6 @@
 import linear_algebra.basic
 import ring_theory.algebra
+import deprecated.ring
 
 universes v w
 
@@ -26,26 +27,21 @@ is_ring_hom (smul_id : α → β →ₗ[α] β) := {
   map_mul := smul_id.is_semiring_hom.map_mul
 }
 
+def smul_id_ring_hom : α →+* (β →ₗ[α] β) := ring_hom.of (smul_id : α → β →ₗ[α] β)
+
+
 -- TODO: merge with this?
 #check module.endomorphism_algebra 
 #check algebra_map
 
 instance : algebra α (β →ₗ[α] β) := 
-{ to_fun := smul_id,
-  commutes' := 
+  (smul_id_ring_hom : α →+* (β →ₗ[α] β)).to_algebra'
   begin 
     intros a f, 
-    unfold smul_id, 
-    ext, 
-    simp, 
-  end,
-  smul_def' := 
-  begin
-    intros a f, 
-    unfold smul_id, 
+    simp only [smul_id_ring_hom, ring_hom.coe_of], 
+    dunfold smul_id, 
     ext, 
     simp, 
   end
-}
 
 end smul_id

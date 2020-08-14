@@ -1,8 +1,8 @@
 [package]
 name = "cvx"
 version = "0.1"
-lean_version = "3.4.2"
+lean_version = "leanprover-community/lean:3.18.4"
 path = "src"
 
 [dependencies]
-mathlib = {git = "https://github.com/leanprover-community/mathlib", rev = "a3844c85c606acca5922408217d55891b760fad6"}
+mathlib = {git = "https://github.com/leanprover-community/mathlib", rev = "ac2f01186c5f44fccf1af2349a348bc0f2556ff2"}
