@@ -1,0 +1,17 @@
+Do we need derivative information?
+
+What backend solvers are the most important ones for us?
+
+Do we also need to transform the dual problem?
+
+Thesis 4.2 introduces transformations!
+
+Thesis 4.2.4 seems to suggest that also cvx can give us dual information about the original
+problem. So do we really need to reimplement cvx to be able to verify its results?
+
+The solvers list of CVX suggests that backends solve only LP QP SOCP SDP GP and Integer.
+But the thesis suggests that other problems can also be solved if code for 
+barriers, derivatives, or cutting planes is provided. In those cases, the dual information might not
+be as useful, though.
+
+Operate ereal or real?
