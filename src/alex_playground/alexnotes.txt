@@ -15,3 +15,25 @@ barriers, derivatives, or cutting planes is provided. In those cases, the dual i
 be as useful, though.
 
 Operate ereal or real?
+
+
+Curried vs uncurried is a big issue.
+Ideal notation would be something like
+λ (s : structure (x : ℝ) (y : ℝ) (h : x + y > 0)), open s in x + y 
+
+
+
+Options:
+- PSigma 
+  - with/without builtin string
+  - final unit or not
+
+- With list of types (two types of list elements: Prop/higher universe)
+
+- Structure (automatically inserted before thm declaration)
+
+- Type classes
+
+
+We should be able to write lemmas without metaprogramming!
+(rather than lemmas, these might be equivalence defs)

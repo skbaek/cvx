@@ -1,8 +1,8 @@
 import data.real.basic
+import data.matrix.basic
 import order.lattice
 import tactic.interactive
 noncomputable theory
-
 
 section curried
 
@@ -29,6 +29,7 @@ end curried
 def optimal_value {α : Type*} [curried α ℝ] (f : α) : ℝ := Sup (range f)
 
 def optimal_point {α : Type*} [curried α ℝ] (f : α) := {x : curried.uncurried_arg_type α ℝ // ∀ y, ↿f x ≥ ↿f y}
+
 def optimal_point' {α : Type*} [curried α ℝ] (f : α) := {x : curried.uncurried_arg_type α ℝ // ↿f x = optimal_value f}
 
 
@@ -153,3 +154,6 @@ begin
   { refl },
   sorry
 end
+
+
+#check nat 
