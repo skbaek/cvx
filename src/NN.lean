@@ -1,4 +1,4 @@
-import data.rat tactic.norm_num .misc .string 
+import data.rat tactic.norm_num .misc .string
 
 universes u v 
 
@@ -149,7 +149,7 @@ do s ← get_simp_lemmas mul_simp_lemmas,
 /- Return ⌜h : t = s⌝ -/
 meta def prove_eq (αx tx ux : expr) : tactic expr := 
 do (sx,px) ← simp_mul tx,
-   (rx,qx) ← norm_num sx,
+   (rx,qx) ← norm_num.derive' sx,
    unify rx ux,
    to_expr ``(@eq.trans %%αx %%tx %%sx %%rx %%px %%qx)
 

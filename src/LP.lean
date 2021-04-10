@@ -9,7 +9,7 @@ structure LP (α : Type) (m n : nat) :=
 (rhs : N α)
 
 def LP.feasible : LP α m n → N α → Prop  
-| ⟨m, n, c, A, b⟩ x :=  N.le m (mul_vec n A x) b ∧ (N.le n (N.zero α) x)
+| ⟨c, A, b⟩ x :=  N.le m (mul_vec n A x) b ∧ (N.le n (N.zero α) x)
 
 def LP.is_feasible (P : LP α m n) : Prop :=
 ∃ x : N α, P.feasible x
@@ -42,7 +42,9 @@ meta def NNx.repr (Ax : expr) (m : nat) : nat → tactic string
      return $ string.join [As, "\n", vs]
 
 meta def put_LP : tactic (string × string × string) := 
-do `((⟨_, _, %%cx, %%Ax, %%bx⟩ : LP rat %%mx %%nx).is_feasible) ← target, 
+do `(LP.is_feasible %%lp) ← target,
+  `(⟨%%cx, %%Ax, %%bx⟩ : LP _ _ _) ← pure lp, 
+  `(LP _ %%mx %%nx) ← infer_type lp,
    m ← eval_expr nat mx,
    n ← eval_expr nat nx,
    cs ← Nx.repr cx n,
@@ -52,24 +54,24 @@ do `((⟨_, _, %%cx, %%Ax, %%bx⟩ : LP rat %%mx %%nx).is_feasible) ← target,
 
 open tactic 
 
-meta instance int.has_reflect : has_reflect ℤ := by tactic.mk_has_reflect_instance
+-- meta instance int.has_reflect : has_reflect ℤ := by tactic.mk_has_reflect_instance
 
 meta def rat.has_reflect' : Π x : ℚ, Σ y : ℚ, Σ' h : x = y, reflected y
 | ⟨x,y,h,h'⟩ := ⟨rat.mk_nat x y, by { rw [rat.num_denom',rat.mk_nat_eq] } , `(_)⟩
 
-meta instance : has_reflect ℚ
-| x :=
-match rat.has_reflect' x with
-| ⟨ ._, rfl, h ⟩ := h
-end
+-- meta instance : has_reflect ℚ
+-- | x :=
+-- match rat.has_reflect' x with
+-- | ⟨ ._, rfl, h ⟩ := h
+-- end
 
 meta def cvxopt_lp (cs As bs : string) : tactic string := 
-unsafe_run_io $
+unsafe_run_io $ do
+cwd ← io.env.get_cwd,
 io.cmd { 
-  cmd  := "python", 
-  args := ["lp.py", cs, As, bs],
-  /- Change this parameter to location of lp.py-/
-  cwd  := "/home/sk/Projects/cvx/src" 
+  cmd  := "python3", 
+  args := ["src/lp.py", cs, As, bs],
+  cwd  := cwd
 }
 
 open parser
@@ -98,13 +100,13 @@ do b ← parser_sign,
    ds ← parser_dnat, 
    let i := int.of_nat (drop_zeroes ds).to_nat,
    let numer : int := if b then i else -i,
-   let denom : nat := 10 ^ ds.length.pred,
+   let denom : ℕ := 10 ^ ds.length.pred,
    return (rat.mk_nat numer denom)
 
 def parser_magnitude : parser rat :=  
 do b ← parser_sign, 
    ds ← parser_digits,
-   let m : nat := 10 ^ (drop_zeroes ds).to_nat,
+   let m : ℕ := 10 ^ (drop_zeroes ds).to_nat,
    return (if b then (rat.mk_nat m 1) else (rat.mk_nat 1 m))
 
 def parser_scinot : parser rat :=  
@@ -136,5 +138,5 @@ def ex_c : N rat := N.of_list [2, 1]
 def ex_A : NN rat := NN.of_lists rat [[-1, 1], [-1, -1], [0, -1], [1, -2]]
 def ex_b : N rat := N.of_list [1, -2, 0, 4]
 
-example : LP.is_feasible ⟨4, 2, ex_c, ex_A, ex_b⟩ :=
+example : LP.is_feasible (⟨ex_c, ex_A, ex_b⟩ : LP _ 4 2) :=
 by LP.show_is_feasible
